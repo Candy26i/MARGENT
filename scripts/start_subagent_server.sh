@@ -8,8 +8,8 @@
 #   bash scripts/start_subagent_server.sh <base_model> <teacher_id> [output_root] [port]
 #
 # Example:
-#   bash scripts/start_subagent_server.sh Qwen/Qwen3-8B openai_us4_500_runtime_raw
-#   bash scripts/start_subagent_server.sh Qwen/Qwen3-8B openai_us4_500_runtime_raw outputs 8000
+#   bash scripts/start_subagent_server.sh Qwen/Qwen3.5-9B medqa_mv
+#   bash scripts/start_subagent_server.sh Qwen/Qwen3.5-9B medqa_mv outputs 8000
 
 set -e
 

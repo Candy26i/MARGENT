@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from ..manager.chat_template import mask_prefix_len, render_chat
 from ..utils.io import read_jsonl
 from ..utils.seed import set_seed
 
@@ -17,22 +18,6 @@ try:
     PEFT_AVAILABLE = True
 except Exception:
     PEFT_AVAILABLE = False
-
-
-def _render_chat(tokenizer, messages, add_generation_prompt: bool) -> str:
-    try:
-        return tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=add_generation_prompt,
-            enable_thinking=False,
-        )
-    except TypeError:
-        return tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=add_generation_prompt,
-        )
 
 
 @dataclass
@@ -55,23 +40,6 @@ class SFTConfig:
     bf16: bool = True
 
 
-def _mask_prefix_len(prompt_ids: List[int], full_ids: List[int]) -> int:
-    """Length of the common token prefix between the prompt-only render and the
-    full (prompt+response) render.
-
-    Using len(prompt_ids) directly is WRONG for templates where the generation
-    prompt is not a strict prefix of the full render — e.g. Qwen3 with
-    enable_thinking=False appends an empty <think></think> block to the
-    generation prompt that does not appear before the assistant content in the
-    full render. That off-by-N would mask the first response tokens.
-    """
-    n = min(len(prompt_ids), len(full_ids))
-    i = 0
-    while i < n and prompt_ids[i] == full_ids[i]:
-        i += 1
-    return i
-
-
 def _tokenize_subagent_sft(rows: List[Dict[str, Any]], tok, max_seq_len: int) -> Any:
     from datasets import Dataset
 
@@ -82,8 +50,8 @@ def _tokenize_subagent_sft(rows: List[Dict[str, Any]], tok, max_seq_len: int) ->
         response = ex["response"]
         response_msgs = [{"role": "assistant", "content": response}]
 
-        prompt_text = _render_chat(tok, prompt_msgs, add_generation_prompt=True)
-        full_text = _render_chat(tok, prompt_msgs + response_msgs, add_generation_prompt=False)
+        prompt_text = render_chat(tok, prompt_msgs, add_generation_prompt=True)
+        full_text = render_chat(tok, prompt_msgs + response_msgs, add_generation_prompt=False)
         # Most chat templates already close the last turn with the EOS token;
         # only append it when missing to avoid training a doubled EOS.
         if eos and not full_text.rstrip().endswith(eos):
@@ -93,7 +61,7 @@ def _tokenize_subagent_sft(rows: List[Dict[str, Any]], tok, max_seq_len: int) ->
         full = tok(full_text, add_special_tokens=False)
         input_ids = full["input_ids"][:max_seq_len]
         attention_mask = full["attention_mask"][:max_seq_len]
-        plen = min(_mask_prefix_len(prompt_ids, full["input_ids"]), max_seq_len)
+        plen = min(mask_prefix_len(prompt_ids, full["input_ids"]), max_seq_len)
         labels = ([-100] * plen) + input_ids[plen:]
         labels = labels[:max_seq_len]
         if len(labels) < len(input_ids):

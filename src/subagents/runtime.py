@@ -1,7 +1,7 @@
 """FrozenAgent: load a SFT'd subagent and run it as a non-trainable tool.
 
 Used at:
-  - marginal-value collection (build_marginal_sft: forced advisor branches)
+  - marginal-value collection (build_marginal_sft: forced sub-agent branches)
   - manager evaluation time (eval_manager_tools / eval_manager_forced)
 
 Key behaviors:
@@ -33,6 +33,8 @@ except ImportError:
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from ..manager.chat_template import render_chat
+from . import SUBAGENT_KINDS
 from .prompts.runtime_prompts import build_runtime_messages
 
 try:
@@ -40,22 +42,6 @@ try:
     PEFT_AVAILABLE = True
 except Exception:
     PEFT_AVAILABLE = False
-
-
-def _render_chat(tokenizer, messages, add_generation_prompt: bool) -> str:
-    try:
-        return tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=add_generation_prompt,
-            enable_thinking=False,
-        )
-    except TypeError:
-        return tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=add_generation_prompt,
-        )
 
 
 @dataclass
@@ -125,7 +111,7 @@ class FrozenSubagent:
             choices=choices,
             candidate_answer=candidate_answer,
         )
-        prompt = _render_chat(self._tok, messages, add_generation_prompt=True)
+        prompt = render_chat(self._tok, messages, add_generation_prompt=True)
         inputs = self._tok(prompt, return_tensors="pt").to(self.device)
 
         do_sample = temperature > 1e-6
@@ -234,7 +220,7 @@ class RemoteSubagentPool:
                 "requests is required for RemoteSubagentPool. pip install requests"
             )
         self._server_url = server_url.rstrip("/")
-        self._kinds: set = set(registered_kinds or ["extractor", "reasoner", "verifier"])
+        self._kinds: set = set(registered_kinds or SUBAGENT_KINDS)
         self._max_new_tokens = max_new_tokens
         self._timeout = timeout
         self._cache: Dict[str, str] = {}
@@ -306,3 +292,31 @@ class RemoteSubagentPool:
         log = self._call_log
         self._call_log = []
         return log
+
+
+def build_subagent_pool(
+    base_model: str,
+    adapter_paths: Dict[str, Optional[str]],
+    server_url: Optional[str],
+    device: str,
+):
+    """Frozen sub-agent pool shared by build_marginal_sft and the eval stages.
+
+    With ``server_url`` the sub-agents are called on the vLLM server
+    (RemoteSubagentPool: no weights in this process); otherwise every kind in
+    ``adapter_paths`` whose adapter directory exists is loaded locally on top
+    of ``base_model``. Raises when no sub-agent is available.
+    """
+    if server_url:
+        print(f"[SUBAGENTS] using remote subagent pool -> {server_url}")
+        return RemoteSubagentPool(server_url=server_url, registered_kinds=list(SUBAGENT_KINDS))
+
+    pool = SubagentPool()
+    for kind, adapter in adapter_paths.items():
+        if adapter and os.path.exists(adapter):
+            pool.register(FrozenSubagent(base_model, adapter, kind, device))
+    if not any(pool.has(kind) for kind in SUBAGENT_KINDS):
+        raise FileNotFoundError(
+            "No subagent adapters found: " + ", ".join(str(p) for p in adapter_paths.values())
+        )
+    return pool

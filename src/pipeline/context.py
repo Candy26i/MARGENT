@@ -1,8 +1,7 @@
 """Shared paths and configuration across pipeline stages.
 
 Output paths are auto-namespaced by teacher_id so different teachers'
-artifacts never collide. This is the core enabler of the comparison
-experiment.
+artifacts never collide.
 """
 from __future__ import annotations
 

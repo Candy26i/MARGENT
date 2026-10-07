@@ -16,7 +16,7 @@ import torch
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer, TrainingArguments
 
-from ..utils.io import read_jsonl
+from ..utils.io import read_jsonl, write_json
 from ..utils.seed import set_seed
 
 try:
@@ -25,7 +25,9 @@ try:
 except Exception:
     PEFT_AVAILABLE = False
 
-from .chat_template import render_chat
+from .chat_template import mask_prefix_len, render_chat
+from .loading import is_adapter_dir
+from .prompt import manager_tool_schemas
 
 
 @dataclass
@@ -46,18 +48,9 @@ class ManagerSFTConfig:
     lora_dropout: float = 0.05
     max_steps: int = -1
     bf16: bool = True
-
-
-def _mask_prefix_len(prompt_ids: List[int], full_ids: List[int]) -> int:
-    """Common token prefix of the prompt-only and full renders. See
-    subagents/train.py: len(prompt_ids) is wrong for templates (e.g. Qwen3 with
-    enable_thinking=False) whose generation prompt is not a strict prefix of
-    the full render — it would mask the first response tokens."""
-    n = min(len(prompt_ids), len(full_ids))
-    i = 0
-    while i < n and prompt_ids[i] == full_ids[i]:
-        i += 1
-    return i
+    # Tool-binding wording the SFT rows were collected with ("environment" or
+    # "argument"); saved next to the checkpoint for the eval stages.
+    binding_mode: str = "environment"
 
 
 def _tokenize_manager_sft(rows: List[Dict[str, Any]], tok, max_seq_len: int, tools=None) -> Dataset:
@@ -80,7 +73,7 @@ def _tokenize_manager_sft(rows: List[Dict[str, Any]], tok, max_seq_len: int, too
         full = tok(full_text, add_special_tokens=False)
         input_ids = full["input_ids"][:max_seq_len]
         attention_mask = full["attention_mask"][:max_seq_len]
-        plen = min(_mask_prefix_len(prompt_ids, full["input_ids"]), max_seq_len)
+        plen = min(mask_prefix_len(prompt_ids, full["input_ids"]), max_seq_len)
         labels = ([-100] * plen) + input_ids[plen:]
         labels = labels[:max_seq_len]
         if len(labels) < len(input_ids):
@@ -105,11 +98,7 @@ def train_manager_sft(cfg: ManagerSFTConfig) -> None:
         tok.pad_token_id = tok.eos_token_id
 
     dtype = torch.bfloat16 if (cfg.bf16 and device == "cuda") else torch.float32
-    is_adapter_init = bool(
-        cfg.init_model_or_adapter
-        and os.path.isdir(cfg.init_model_or_adapter)
-        and os.path.exists(os.path.join(cfg.init_model_or_adapter, "adapter_config.json"))
-    )
+    is_adapter_init = bool(cfg.init_model_or_adapter and is_adapter_dir(cfg.init_model_or_adapter))
     is_full_init = bool(
         cfg.init_model_or_adapter
         and os.path.isdir(cfg.init_model_or_adapter)
@@ -157,8 +146,7 @@ def train_manager_sft(cfg: ManagerSFTConfig) -> None:
     if not rows:
         raise ValueError(f"No rows in {cfg.train_jsonl}")
     print(f"[MANAGER_SFT] tokenizing {len(rows)} rows ...")
-    from .marginal_value import _tool_schemas
-    manager_tools = _tool_schemas("environment")
+    manager_tools = manager_tool_schemas(cfg.binding_mode)
     print(f"[MANAGER_SFT] rendering with {len(manager_tools)} tool schemas")
     train_ds = _tokenize_manager_sft(rows, tok, cfg.max_seq_len, tools=manager_tools)
     total_steps = (len(train_ds) // (cfg.per_device_batch_size * cfg.gradient_accumulation_steps)) * cfg.num_train_epochs
@@ -190,4 +178,7 @@ def train_manager_sft(cfg: ManagerSFTConfig) -> None:
     os.makedirs(cfg.out_dir, exist_ok=True)
     trainer.model.save_pretrained(cfg.out_dir)
     tok.save_pretrained(cfg.out_dir)
+    # Read back by the eval stages under --binding_mode auto so the manager is
+    # evaluated with the tool wording it was trained on.
+    write_json(os.path.join(cfg.out_dir, "manager_run_config.json"), {"binding_mode": cfg.binding_mode})
     print(f"[MANAGER_SFT] saved -> {cfg.out_dir}")

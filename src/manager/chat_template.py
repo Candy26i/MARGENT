@@ -1,9 +1,12 @@
-"""Chat-template helpers shared by manager SFT, marginal-value collection and eval.
+"""Chat-template helpers shared by manager SFT, marginal-value collection, eval
+and the sub-agent SFT/runtime.
 
 Qwen3.5's chat template iterates ``tool_call.arguments`` with ``|items``, so the
 arguments must be a mapping. The vLLM API and the saved SFT JSONL carry them as
 a JSON string, so we convert on a deep copy and leave the caller's messages
-untouched. This module is stdlib-only so tests can import it without torch.
+untouched. ``tool_call_message`` builds such a turn, ``mask_prefix_len`` finds
+the prompt/response boundary for SFT label masking. This module is stdlib-only
+so tests can import it without torch.
 """
 from __future__ import annotations
 
@@ -60,3 +63,40 @@ def render_chat(
             messages, tokenize=False, add_generation_prompt=add_generation_prompt,
             **extra,
         )
+
+
+def mask_prefix_len(prompt_ids: List[int], full_ids: List[int]) -> int:
+    """Length of the common token prefix between the prompt-only render and the
+    full (prompt+response) render.
+
+    Using len(prompt_ids) directly is WRONG for templates where the generation
+    prompt is not a strict prefix of the full render — e.g. Qwen3 with
+    enable_thinking=False appends an empty <think></think> block to the
+    generation prompt that does not appear before the assistant content in the
+    full render. That off-by-N would mask the first response tokens.
+    """
+    n = min(len(prompt_ids), len(full_ids))
+    i = 0
+    while i < n and prompt_ids[i] == full_ids[i]:
+        i += 1
+    return i
+
+
+def tool_call_message(
+    tool_name: str, args: Dict[str, Any], call_id: str, content: str = ""
+) -> Dict[str, Any]:
+    """An assistant turn that calls ``tool_name`` with ``args`` (JSON-encoded,
+    as the saved SFT JSONL carries them). ``content`` keeps the assistant's own
+    text (the DRAFT_ANSWER_ line) in the history, as build_marginal_sft writes it."""
+    return {
+        "role": "assistant",
+        "content": content,
+        "tool_calls": [{
+            "id": call_id,
+            "type": "function",
+            "function": {
+                "name": tool_name,
+                "arguments": json.dumps(args, ensure_ascii=False),
+            },
+        }],
+    }

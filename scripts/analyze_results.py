@@ -23,7 +23,7 @@ import os
 from collections import Counter
 from typing import Any, Dict, List, Tuple
 
-ADVISORS = ("extractor", "reasoner", "verifier")
+SUBAGENTS = ("extractor", "reasoner", "verifier")
 
 
 def read_jsonl(path: str) -> List[Dict[str, Any]]:
@@ -66,7 +66,7 @@ def analyze_counterfactual(path: str) -> Dict[str, Any]:
     direct = [bool(r["direct_correct"]) for r in records]
     out: Dict[str, Any] = {"n": n, "direct_correct": sum(direct), "advisors": {}}
 
-    one_step: Dict[str, List[bool]] = {a: [] for a in ADVISORS}
+    one_step: Dict[str, List[bool]] = {a: [] for a in SUBAGENTS}
     for r in records:
         seen = set()
         for br in r["branches"]:
@@ -75,7 +75,7 @@ def analyze_counterfactual(path: str) -> Dict[str, Any]:
                 one_step[seq[0]].append(bool(br["correct"]))
                 seen.add(seq[0])
 
-    for a in ADVISORS:
+    for a in SUBAGENTS:
         forced = one_step[a]
         if len(forced) != n:
             continue
@@ -89,7 +89,7 @@ def analyze_counterfactual(path: str) -> Dict[str, Any]:
         }
 
     any_correct = [
-        d or any(one_step[a][i] for a in ADVISORS if len(one_step[a]) == n)
+        d or any(one_step[a][i] for a in SUBAGENTS if len(one_step[a]) == n)
         for i, d in enumerate(direct)
     ]
     out["oracle_correct"] = sum(any_correct)

@@ -1,3 +1,4 @@
+"""Unit tests for the selection rule and SFT-row construction in src.manager.marginal_value (no torch, no network)."""
 import unittest
 
 from src.manager.marginal_value import (

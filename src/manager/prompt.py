@@ -4,6 +4,7 @@ The manager is a deliberation orchestrator with three cognitive specialist tools
   - extractor_tool: information extraction
   - reasoner_tool: structured reasoning
   - verifier_tool: domain audit and error detection
+``manager_tool_schemas`` gives their native tool-calling schemas.
 
 Draft-conditioned routing policy:
   - 0 to 3 tool calls allowed. Each tool may be called at most once.
@@ -15,7 +16,7 @@ Draft-conditioned routing policy:
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _label_to_token(label: str) -> str:
@@ -24,15 +25,6 @@ def _label_to_token(label: str) -> str:
     s = re.sub(r"[^A-Za-z0-9_]", "_", s)
     s = re.sub(r"_+", "_", s).strip("_")
     return s.upper()
-
-
-def _token_to_label(token: str, choices: Dict[str, str]) -> str:
-    """Map ANSWER_<TOKEN> back to canonical choice key."""
-    t = token.upper().strip()
-    for k in choices.keys():
-        if _label_to_token(k) == t:
-            return k
-    return token
 
 
 # Regex for final ANSWER_ on last line
@@ -51,21 +43,16 @@ DRAFT_ANSWER_RE = re.compile(
 def build_manager_system_prompt(
     label_keys: List[str],
     task_description: str = "",
-    exploration_hint: str = "",
 ) -> str:
     """Build the manager's system prompt with draft-conditioned routing.
 
     Args:
         label_keys: choice keys for the current task (e.g. ["A","B","C","D"]).
         task_description: optional one-liner describing the task domain.
-        exploration_hint: START-style hint injected after deliberation policy
-            during GRPO training to encourage multi-tool exploration.
-            Leave empty for evaluation / deployment.
     """
     answer_lines = "\n".join(f"  ANSWER_{_label_to_token(k)}" for k in label_keys)
     draft_lines  = "\n".join(f"  DRAFT_ANSWER_{_label_to_token(k)}" for k in label_keys)
     desc = task_description or "You are a manager agent solving a multiple-choice question."
-    hint_block = f"\n{exploration_hint.strip()}\n" if exploration_hint.strip() else ""
     return (
         desc + "\n\n"
         "You have THREE cognitive specialist tools:\n"
@@ -80,8 +67,7 @@ def build_manager_system_prompt(
         + draft_lines + "\n"
         "  - Then decide: only call another tool if it might change your draft answer.\n"
         "  - Stop when additional tools are unlikely to improve your answer.\n"
-        "  - Reserve all three tools for genuinely hard cases where each adds new signal.\n"
-        + hint_block + "\n"
+        "  - Reserve all three tools for genuinely hard cases where each adds new signal.\n\n"
         "Output rules:\n"
         "  - Use the native tool-calling interface. Do NOT write tool calls as text, XML, or JSON.\n"
         "  - In a turn where you call a tool, output DRAFT_ANSWER_ but NOT the final ANSWER_.\n"
@@ -123,6 +109,63 @@ def build_manager_user_message(
     return "\n".join(lines)
 
 
+def manager_tool_schemas(binding_mode: str) -> List[Dict[str, Any]]:
+    """Native tool-calling schemas for the three tools, shared by
+    build_marginal_sft, train_manager_sft and the eval stages so the manager is
+    evaluated with the tool JSON it was trained on. ``argument`` binding adds a
+    required ``example_id``; the verifier always takes ``current_draft``."""
+    required = ["example_id"] if binding_mode == "argument" else []
+    properties: Dict[str, Any] = {}
+    if binding_mode == "argument":
+        properties["example_id"] = {
+            "type": "integer",
+            "description": "The current example ID.",
+        }
+    verifier_properties = dict(properties)
+    verifier_properties["current_draft"] = {
+        "type": "string",
+        "description": "The current draft answer key.",
+    }
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": "extractor_tool",
+                "description": "Extract decision-relevant factual signals.",
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required,
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "reasoner_tool",
+                "description": "Produce a structured reasoning scaffold.",
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required,
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "verifier_tool",
+                "description": "Audit the current draft for errors.",
+                "parameters": {
+                    "type": "object",
+                    "properties": verifier_properties,
+                    "required": required,
+                },
+            },
+        },
+    ]
+
+
 def parse_final_answer(text: str, choice_keys: List[str]) -> Optional[str]:
     """Parse the final ANSWER_<TOKEN> line and map to a canonical choice key."""
     if not text:
@@ -144,7 +187,7 @@ def parse_draft_answer(text: str, choice_keys: List[str]) -> Optional[str]:
     """Parse the LAST DRAFT_ANSWER_<TOKEN> from an assistant turn.
 
     Returns the most recent draft choice key, or None if not present.
-    Used by the ADC reward function to track intermediate answer transitions.
+    Used by eval_manager_tools and build_marginal_sft to track candidate transitions.
     """
     if not text:
         return None

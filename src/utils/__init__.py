@@ -1,3 +1,4 @@
+"""JSONL I/O, teacher-call cache, leakage audit and seeding (torch is imported lazily)."""
 from .io import (
     read_json, write_json,
     read_jsonl, write_jsonl, append_jsonl,

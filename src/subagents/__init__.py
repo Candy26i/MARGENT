@@ -1,8 +1,13 @@
 """Subagent package.
 
-Schema objects are loaded lazily so lightweight utilities such as JSONL prompt
-export do not require pydantic at import time.
+``SUBAGENT_KINDS`` names the three frozen sub-agents (the paper's Extractor,
+Reasoner and Verifier; "advisor" in older docs and report keys). Schema objects
+are loaded lazily so lightweight utilities such as JSONL prompt export do not
+require pydantic at import time.
 """
+from typing import Tuple
+
+SUBAGENT_KINDS: Tuple[str, ...] = ("extractor", "reasoner", "verifier")
 
 _SCHEMA_EXPORTS = {
     "AgentKind",
@@ -20,4 +25,4 @@ def __getattr__(name):
     raise AttributeError(name)
 
 
-__all__ = sorted(_SCHEMA_EXPORTS)
+__all__ = ["SUBAGENT_KINDS", *sorted(_SCHEMA_EXPORTS)]

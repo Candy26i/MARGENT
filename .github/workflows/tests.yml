@@ -16,6 +16,8 @@ jobs:
       # The unit tests are pure Python; no model weights, datasets or GPU needed.
       - name: Run unit tests
         run: python -m unittest discover -s tests -t . -v
+      - name: Lint (pyflakes, zero warnings)
+        run: pip install pyflakes && python -m pyflakes src scripts tests
       - name: Check that every Python file parses
         run: python -c "import ast, glob; [ast.parse(open(f).read(), f) for f in glob.glob('**/*.py', recursive=True)]; print('ok')"
       - name: Summarise released results (stdlib only)

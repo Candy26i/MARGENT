@@ -1,5 +1,8 @@
 # Marginal-value distillation: experiment protocol
 
+"Advisor" in this document and in the report keys (`by_advisor_one_step`,
+`available_advisors`) = sub-agent in the paper.
+
 This is the protocol for the paper's method. The manager is trained by
 supervised distillation only: `build_marginal_sft` collects same-state
 counterfactual branches, `train_manager_sft` fine-tunes the manager on the
@@ -57,7 +60,7 @@ Before starting, verify that these exist:
 
 ```bash
 for KIND in extractor reasoner verifier; do
-  test -d "outputs/adapters/$TEACHER_ID/${KIND}_adapter" || echo "missing $KIND"
+  test -d "outputs/adapters/${SUBAGENT_TEACHER_ID:-$TEACHER_ID}/${KIND}_adapter" || echo "missing $KIND"
 done
 ```
 
@@ -75,16 +78,17 @@ export EXCL_ADVISOR_SFT="--exclude_sft_example_ids $SFT_DIR/extractor_sft.jsonl 
   --exclude_sft_example_ids $SFT_DIR/verifier_sft.jsonl"
 ```
 
-(Use the `*_runtime_raw_sft.jsonl` files instead if the advisor data came from
-the offline `import_deepseek_jsonl` path.) Without this flag the counterfactual
-rescue rates are measured partly on questions the advisors were trained on.
+(The offline `import_deepseek_jsonl` path writes the same `<kind>_sft.jsonl`
+files unless `--deepseek_sft_jsonl` named another path; pass whichever path was
+used.) Without this flag the counterfactual rescue rates are measured partly on
+questions the advisors were trained on.
 
 Start the LoRA advisor server on GPU 0 before counterfactual collection and
 keep the collector/manager on another GPU:
 
 ```bash
 # terminal A
-bash scripts/start_subagent_server.sh "$BASE_MODEL" "$TEACHER_ID"
+bash scripts/start_subagent_server.sh "$BASE_MODEL" "${SUBAGENT_TEACHER_ID:-$TEACHER_ID}"
 ```
 
 In terminal B, pin single-manager collection and evaluation to another GPU:
@@ -228,8 +232,8 @@ done
 Depth gate: compare `oracle_gain` and `preferred_depth_counts` across the
 three reports. Use depth 2 only if it adds a meaningful oracle gain over depth
 1, and depth 3 only if it adds over depth 2. Do not use a deeper search merely
-to create longer demonstrations. The README walkthrough uses depth 3 on MedQA
-and depth 2 on MMLU-Pro and GPQA.
+to create longer demonstrations. The paper searches to depth 3 on MedQA and
+AQuA-RAT and to depth 2 on MMLU-Pro and GPQA.
 
 ## 6. Step 3: marginal-value distillation and the ρ sweep
 
@@ -291,7 +295,9 @@ done
 ```
 
 Larger ρ lowers the call rate and usually raises the call gap. Choose ρ,
-depth and the checkpoint on dev only (Step 4).
+depth and the checkpoint on dev only (Step 4). `eval_manager_tools` (Step 4)
+overwrites `manager_tool_eval.jsonl` and its report on every run, so copy the
+report before evaluating the next variant of the sweep.
 
 A second collection round from the distilled policy is optional: rerun
 `build_marginal_sft` with `--mv_manager_dir "$MV_ADAPTER"` and continue
@@ -322,9 +328,6 @@ contains:
 - `tool_call_rate`, `call_rate_given_draft_wrong`,
   `call_rate_given_draft_correct` and `draft_conditioned_call_gap`;
 - `correction_rate` and `corruption_rate`.
-
-`eval_manager_tools` overwrites `manager_tool_eval.jsonl` and its report on
-every run, so copy the report before evaluating the next variant of the sweep.
 
 Required behavioral gate:
 
@@ -373,6 +376,27 @@ done
 Outputs go to `outputs/eval/$TEACHER_ID/manager_forced_<sequence>.jsonl` and
 `manager_forced_<sequence>_report.json`; `--eval_out_tag` renames them.
 
+The same sequences with the untrained base manager (`--eval_manager_dir
+"$BASE_MODEL"`: a Hugging Face id or a full checkpoint directory loads without
+an adapter) give the "base manager + forced advisors" baselines of Section 10;
+tag the outputs so they do not overwrite the trained manager's:
+
+```bash
+for SEQ in verifier "extractor,reasoner,verifier"; do
+  python -m src.pipeline.cli eval_manager_forced \
+    --base_model "$BASE_MODEL" \
+    --teacher_id "$TEACHER_ID" \
+    --medqa_normalized_cache "$MEDQA_CACHE" \
+    --train_size "$TRAIN_SIZE" --dev_size "$DEV_SIZE" --test_size 0 \
+    --eval_n_samples "$DEV_SIZE" \
+    --eval_manager_dir "$BASE_MODEL" \
+    --eval_forced_tools "$SEQ" \
+    --eval_out_tag "base_${SEQ//,/_}" \
+    --subagent_server_url "$SUBAGENT_SERVER_URL" \
+    --task_description "$TASK_DESC"
+done
+```
+
 The matched-compute resampling control is `eval_manager` with
 self-consistency (sample k completions, majority vote), using the same
 manager directory:
@@ -389,10 +413,9 @@ python -m src.pipeline.cli eval_manager \
   --task_description "$TASK_DESC"
 ```
 
-## 9. Step 6: locked evaluation and transfer
+## 9. Step 6: locked evaluation and the other benchmarks
 
-After freezing the selected manager, run exactly once on the MedQA test split
-and then on the zero-shot transfer benchmarks.
+After freezing the selected manager, run exactly once on the MedQA test split.
 
 ```bash
 export FINAL_MANAGER="$MV_ADAPTER"   # the dev-selected adapter
@@ -411,37 +434,44 @@ python -m src.pipeline.cli eval_manager_tools \
 Run the same forced sequences (Step 5) on the locked split with the same
 `$FINAL_MANAGER`.
 
-Transfer benchmarks use the same command with their cache flag
+MMLU-Pro, GPQA and AQuA-RAT each get their own collection and manager:
+repeat Steps 1–5 with that benchmark's cache flag
 (`--mmlu_pro_normalized_cache`, `--gpqa_normalized_cache`,
-`--aqua_rat_normalized_cache`) and `--train_size 0`, which makes the loader
-honor the benchmark's own split labels as an evaluation-only pool. AQuA-RAT
-(the paper's n = 254 test split):
+`--aqua_rat_normalized_cache`), a matching `--task_description` and the
+paper's depth (3 on AQuA-RAT, 2 on MMLU-Pro and GPQA; GPQA collects 200
+states), then evaluate once on a set disjoint from the collection pool. An
+evaluation-only cache is loaded with `--train_size 0`, which makes the loader
+honor the benchmark's own split labels. AQuA-RAT (collection pool from the
+train split; the paper's locked set is the 254-question test split):
 
 ```bash
+# collection pool: a capped slice of the 97k-question train split
 python -m src.pipeline.cli load_aqua_rat \
+  --aqua_rat_splits train --aqua_rat_max 2000 \
+  --aqua_rat_normalized_cache outputs/data/aqua_rat_train.jsonl
+# locked evaluation set
+python -m src.pipeline.cli load_aqua_rat --train_size 0 \
   --aqua_rat_normalized_cache outputs/data/aqua_rat_test.jsonl
 
-# task description worded for the benchmark, as for MedQA above
+# Steps 1-5 with --teacher_id aqua_rat_mv, the train cache, --mv_max_depth 3
+# and the task description below; then the single locked run:
 python -m src.pipeline.cli eval_manager_tools \
-  --base_model "$BASE_MODEL" --teacher_id "$TEACHER_ID" \
+  --base_model "$BASE_MODEL" --teacher_id aqua_rat_mv \
   --aqua_rat_normalized_cache outputs/data/aqua_rat_test.jsonl \
   --train_size 0 --dev_size 0 --test_size 254 \
   --eval_n_samples 254 \
-  --eval_manager_dir "$FINAL_MANAGER" \
+  --eval_manager_dir "outputs/manager/aqua_rat_mv/sft_marginal" \
   --eval_max_tool_calls 3 \
   --subagent_server_url "$SUBAGENT_SERVER_URL" \
   --task_description "You are a manager agent solving a multiple-choice algebra word problem."
 ```
 
 For GPQA build the held-out Diamond cache with `scripts/build_gpqa_splits.py`
-(see README); for MMLU-Pro load `--mmlu_pro_splits test`. When a transfer
-benchmark gets its own manager (the paper's MMLU-Pro and GPQA runs), repeat
-Steps 1–5 with that benchmark's cache flags, a matching `--task_description`
-and depth 2.
+(see README); for MMLU-Pro load `--mmlu_pro_splits test`.
 
 **Do not retune on the locked set.** ρ, depth, the checkpoint, the
 `--eval_max_tool_calls` budget and any threshold are fixed on dev before the
-single test run, and are not changed for the transfer benchmarks.
+single test run of each benchmark.
 
 ## 10. Required baselines and ablations
 
@@ -497,4 +527,4 @@ When a run fails, inspect in this order:
    tie-break is present and collect fresh marginal pairs from the new policy.
 
 This order separates advisor capability, counterfactual data quality and
-routing initialization instead of trying to repair all three at once.
+routing-policy distillation instead of trying to repair all three at once.

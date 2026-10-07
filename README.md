@@ -50,8 +50,8 @@ The code predates the paper's final vocabulary. The mapping below applies throug
 2. **Distillation.** Correct candidate → commit target. Incorrect candidate with
    a successful branch → one shortest success sampled with an example-specific
    seed. No successful branch → no label. Commit trajectories are capped at ρ
-   times the rescue trajectories. The full manager is fine-tuned on the
-   resulting per-state decisions.
+   times the rescue trajectories. The manager is LoRA-fine-tuned
+   (`--sft_no_lora` for full-parameter) on the resulting per-state decisions.
 
 Sub-agents return schema-constrained JSON (pydantic) and are filtered at
 synthesis by JSON, schema, coverage and answer-leakage gates
@@ -82,10 +82,8 @@ docs/
 results/        released records (see results/README.md)
 ```
 
-Everything that is not the paper's method (outcome-only GRPO, ADC/CCR
-rewards, the SFT anchor, the failure-recycling "evolve" loop, the cold-start
-stages, LegalBench, DeepSpeed configs) lives on the `legacy` branch, tag
-`v0.1-full`; see `CHANGELOG.md`.
+Removed legacy code: see the Appendix-diagnostic section below and
+`CHANGELOG.md`.
 
 ## Installation
 
@@ -115,7 +113,7 @@ benchmark into `outputs/data/*.jsonl`:
 | MedQA-USMLE (4 options) | `load_medqa` | official train/dev/test splits |
 | MMLU-Pro | `load_mmlu_pro` | `--mmlu_pro_splits test` |
 | GPQA | `load_gpqa`, `scripts/build_gpqa_splits.py` | gated: accept the terms on Hugging Face and `huggingface-cli login`; the split script holds out 100 Diamond questions, disjoint from the 446-question collection pool |
-| AQuA-RAT | `load_aqua_rat` | `--aqua_rat_splits test` (default): the 254-question test split used in the paper (n = 254); `deepmind/aqua_rat`, config `raw` |
+| AQuA-RAT | `load_aqua_rat` | `--aqua_rat_splits test` (default): the 254-question test split used in the paper (n = 254); `--aqua_rat_splits train` for its collection pool; `deepmind/aqua_rat`, config `raw` |
 
 ## Reproducing the pipeline (MedQA walkthrough)
 
@@ -207,8 +205,10 @@ its own `--mv_output_dir`, then repeat steps 6–7. Larger ρ lowers the call ra
 and usually raises the call gap; select ρ, depth and checkpoint on the
 development pool before the single locked evaluation.
 
-MMLU-Pro, GPQA and AQuA-RAT use the same steps with their cache flags, a
-matching `--task_description`, and depth 2 (`docs/EXPERIMENTS.md` §9).
+MMLU-Pro, GPQA and AQuA-RAT each get their own collection and manager with
+the same steps, their cache flags and a matching `--task_description`; the
+paper searches to depth 3 on MedQA and AQuA-RAT and to depth 2 on MMLU-Pro and
+GPQA (`docs/EXPERIMENTS.md` §9).
 
 ### Appendix diagnostic: outcome-only GRPO
 
@@ -227,10 +227,15 @@ only the method.
 | `train_subagent` | LoRA-SFT one sub-agent |
 | `eval_subagents` | JSON / schema validity gate for sub-agents |
 | `build_marginal_sft` | same-state interventional collection and shortest-success selection |
-| `train_manager_sft` | manager distillation (or continuation from a checkpoint with `--manager_sft_init_adapter`) |
+| `train_manager_sft` | manager distillation (or continuation from a checkpoint with `--manager_sft_init_adapter`); saves `manager_run_config.json` (the tool-binding wording) next to the checkpoint |
 | `eval_manager` | no-sub-agent answering; `--eval_sc_k K` gives a self-consistency baseline |
 | `eval_manager_tools` | the learned delegate-or-commit policy |
 | `eval_manager_forced` | fixed delegation sequences: always-Verifier, force-all, any subset |
+
+Defaults: `train_manager_sft` reads `marginal_value/manager_sft_marginal.jsonl`
+and writes `sft_marginal/` under `outputs/manager/<teacher_id>/`; the three
+`eval_manager*` stages default `--eval_manager_dir` to that `sft_marginal/`
+directory and also accept a full checkpoint directory or a Hugging Face id.
 
 ## Released results
 

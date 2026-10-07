@@ -15,13 +15,16 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..benchmarks.base import StandardRow
-from ..manager.chat_template import render_chat
+from ..manager.chat_template import render_chat, tool_call_message
+from ..manager.loading import load_manager
 from ..manager.prompt import (
     build_manager_system_prompt,
     build_manager_user_message,
+    manager_tool_schemas,
     parse_draft_answer,
     parse_final_answer,
 )
+from ..subagents import SUBAGENT_KINDS
 from ..utils.io import write_json, write_jsonl
 from ..utils.seed import set_seed
 from .context import StageContext
@@ -29,18 +32,20 @@ from .context import StageContext
 
 def _resolve_binding_mode(ctx: StageContext, manager_dir: str) -> str:
     """Resolve binding mode: explicit ctx setting wins; 'auto' reads the
-    manager_run_config.json saved at training time; default 'argument'."""
+    manager_run_config.json that train_manager_sft saves next to the
+    checkpoint; default 'environment', which is what build_marginal_sft and
+    train_manager_sft use under 'auto' (e.g. for the untrained base model)."""
     binding_mode = ctx.binding_mode
     if binding_mode == "auto":
         run_config = os.path.join(manager_dir, "manager_run_config.json")
         if os.path.exists(run_config):
             try:
                 with open(run_config, "r", encoding="utf-8") as f:
-                    binding_mode = str(json.load(f).get("binding_mode") or "argument")
+                    binding_mode = str(json.load(f).get("binding_mode") or "environment")
             except Exception:
-                binding_mode = "argument"
+                binding_mode = "environment"
         else:
-            binding_mode = "argument"
+            binding_mode = "environment"
     return binding_mode
 
 
@@ -55,19 +60,15 @@ def run_eval_manager(
     sc_k: int = 1,
     sc_temperature: float = 0.7,
 ) -> Dict[str, Any]:
-    """Evaluate manager accuracy + routing pattern on a sample of rows.
-
-    Note: this uses a SIMPLE one-shot generation (no native tool calling).
-    For tool-using eval you'd need to set up the same TRL rollout machinery
-    as training; this is a pragmatic accuracy probe.
+    """Direct answering, no tools; the tool-using evaluation is
+    run_eval_manager_tools.
 
     sc_k > 1 enables a self-consistency baseline: sample sc_k completions at
     sc_temperature and take the majority vote over parsed answers. This is the
-    matched-compute resampling control for RQ1 (compare its token budget to the
-    learned orchestrator's delegation budget).
+    matched-compute resampling control (compare its token budget to the
+    learned policy's delegation budget).
     """
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     if manager_dir is None:
         manager_dir = ctx.manager_sft_dir()
@@ -81,28 +82,8 @@ def run_eval_manager(
     random.Random(ctx.seed).shuffle(sample)
     sample = sample[:n_samples]
 
-    tok = AutoTokenizer.from_pretrained(manager_dir, trust_remote_code=True)
-    if tok.pad_token_id is None and tok.eos_token_id is not None:
-        tok.pad_token_id = tok.eos_token_id
-    tok.padding_side = "left"
-
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-
-    is_adapter = bool(
-        os.path.isdir(manager_dir)
-        and os.path.exists(os.path.join(manager_dir, "adapter_config.json"))
-    )
-    if not is_adapter:
-        model = AutoModelForCausalLM.from_pretrained(
-            manager_dir, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-    else:
-        from peft import PeftModel
-        base = AutoModelForCausalLM.from_pretrained(
-            ctx.base_model, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-        model = PeftModel.from_pretrained(base, manager_dir).to(device)
-    model.eval()
+    tok, model = load_manager(ctx.base_model, manager_dir, device, dtype)
 
     try:
         from tqdm import tqdm as _tqdm
@@ -124,14 +105,7 @@ def run_eval_manager(
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_msg},
         ]
-        try:
-            prompt_text = tok.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True, enable_thinking=False,
-            )
-        except TypeError:
-            prompt_text = tok.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True,
-            )
+        prompt_text = render_chat(tok, messages, add_generation_prompt=True)
         inputs = tok(prompt_text, return_tensors="pt").to(device)
 
         if sc_k > 1:
@@ -188,51 +162,6 @@ def run_eval_manager(
     return report
 
 
-def _manager_tool_schemas(binding_mode: str) -> List[Dict[str, Any]]:
-    required = ["example_id"] if binding_mode == "argument" else []
-    properties = (
-        {
-            "example_id": {
-                "type": "integer",
-                "description": "The current example ID from the user message.",
-            }
-        }
-        if binding_mode == "argument"
-        else {}
-    )
-    verifier_properties = dict(properties)
-    verifier_properties["current_draft"] = {
-        "type": "string",
-        "description": "Your current draft answer key (e.g. \"B\") to audit.",
-    }
-    return [
-        {
-            "type": "function",
-            "function": {
-                "name": "extractor_tool",
-                "description": "Extract decision-relevant factual signals from the question and context.",
-                "parameters": {"type": "object", "properties": properties, "required": required},
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "reasoner_tool",
-                "description": "Produce a structured reasoning scaffold for the choices.",
-                "parameters": {"type": "object", "properties": properties, "required": required},
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "verifier_tool",
-                "description": "Identify relevant domain principles and audit the reasoning for logical or computational errors. Pass your current draft answer via current_draft.",
-                "parameters": {"type": "object", "properties": verifier_properties, "required": required},
-            },
-        },
-    ]
-
-
 _TOOL_CALL_RE = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>", re.DOTALL | re.IGNORECASE)
 
 
@@ -276,51 +205,6 @@ def _extract_manager_tool_calls(text: str) -> Tuple[str, List[Dict[str, Any]]]:
     return content, calls
 
 
-def _tool_call_message(
-    tool_name: str, args: Dict[str, Any], call_id: str, content: str = ""
-) -> Dict[str, Any]:
-    return {
-        "role": "assistant",
-        # Keep the assistant's own text (DRAFT_ANSWER_ etc.) in the history so
-        # eval matches training, where TRL preserves tool-call turn content.
-        "content": content,
-        "tool_calls": [{
-            "id": call_id,
-            "type": "function",
-            "function": {
-                "name": tool_name,
-                "arguments": json.dumps(args, ensure_ascii=False),
-            },
-        }],
-    }
-
-
-def _load_manager_for_eval(ctx: StageContext, manager_dir: str, device: str, dtype: Any):
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    tok = AutoTokenizer.from_pretrained(manager_dir, trust_remote_code=True)
-    if tok.pad_token_id is None and tok.eos_token_id is not None:
-        tok.pad_token_id = tok.eos_token_id
-    tok.padding_side = "left"
-
-    is_full = (
-        os.path.exists(os.path.join(manager_dir, "config.json"))
-        and not os.path.exists(os.path.join(manager_dir, "adapter_config.json"))
-    )
-    if is_full:
-        model = AutoModelForCausalLM.from_pretrained(
-            manager_dir, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-    else:
-        from peft import PeftModel
-        base = AutoModelForCausalLM.from_pretrained(
-            ctx.base_model, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-        model = PeftModel.from_pretrained(base, manager_dir).to(device)
-    model.eval()
-    return tok, model
-
-
 def run_eval_manager_tools(
     ctx: StageContext,
     rows: List[StandardRow],
@@ -334,49 +218,24 @@ def run_eval_manager_tools(
 ) -> Dict[str, Any]:
     """Evaluate the manager with the same frozen subagents used as tools."""
     import torch
-    from ..subagents.runtime import FrozenSubagent, SubagentPool
+    from ..subagents.runtime import build_subagent_pool
 
     if manager_dir is None:
         manager_dir = ctx.manager_sft_dir()
-    if not os.path.exists(manager_dir):
-        raise FileNotFoundError(f"manager_dir not found: {manager_dir}")
 
+    # Under "environment" binding the example ID is injected by the evaluator
+    # instead of generated by the model; the tool loop is otherwise the same.
     binding_mode = _resolve_binding_mode(ctx, manager_dir)
-    if binding_mode == "environment":
-        # The local XML tool loop is equivalent to argument binding except the
-        # example ID is injected by the evaluator instead of generated by model.
-        user_binding_mode = "environment"
-    else:
-        user_binding_mode = "argument"
 
     set_seed(ctx.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-    if subagent_server_url:
-        from ..subagents.runtime import RemoteSubagentPool
-        pool = RemoteSubagentPool(server_url=subagent_server_url)
-        print(f"[EVAL] using remote subagent pool -> {subagent_server_url}")
-    else:
-        pool = SubagentPool()
-        # subagent_base_model = "Qwen/Qwen3-4B"
-        subagent_base_model = ctx.base_model
-        for kind in ("extractor", "reasoner", "verifier"):
-            adapter = ctx.adapter_path(kind)
-            if os.path.exists(adapter):
-                pool.register(FrozenSubagent(subagent_base_model, adapter, kind, device))
-        if not pool._agents:
-            raise FileNotFoundError(f"No subagent adapters found under {ctx.adapter_root}")
+    pool = build_subagent_pool(
+        ctx.base_model, {k: ctx.adapter_path(k) for k in SUBAGENT_KINDS}, subagent_server_url, device,
+    )
 
-    # pool = SubagentPool()
-    # for kind in ("extractor", "reasoner", "verifier"):
-    #     adapter = ctx.adapter_path(kind)
-    #     if os.path.exists(adapter):
-    #         pool.register(FrozenSubagent(ctx.base_model, adapter, kind, device))
-    # if not pool._agents:
-    #     raise FileNotFoundError(f"No subagent adapters found under {ctx.adapter_root}")
-
-    tok, model = _load_manager_for_eval(ctx, manager_dir, device, dtype)
-    tools = _manager_tool_schemas(user_binding_mode)
+    tok, model = load_manager(ctx.base_model, manager_dir, device, dtype)
+    tools = manager_tool_schemas(binding_mode)
 
     sample = list(rows)
     random.Random(ctx.seed).shuffle(sample)
@@ -411,7 +270,7 @@ def run_eval_manager_tools(
                     question=r.question,
                     context=r.context,
                     choices=r.choices,
-                    binding_mode=user_binding_mode,
+                    binding_mode=binding_mode,
                 ),
             },
         ]
@@ -442,15 +301,15 @@ def run_eval_manager_tools(
                 break
 
             # Execute every tool call in this turn (up to the remaining
-            # budget), mirroring training where TRL runs all emitted calls —
-            # taking only calls[0] would silently drop the rest.
+            # budget), mirroring build_marginal_sft, which runs every emitted
+            # call — taking only calls[0] would silently drop the rest.
             take = calls[: max(0, max_tool_calls - len(used_tools))]
             asst_msg: Dict[str, Any] = {"role": "assistant", "content": content, "tool_calls": []}
             executed: List[Tuple[str, str, str]] = []  # (call_id, tool_name, output)
             for call in take:
                 tool_name = call["name"]
                 args = dict(call.get("arguments") or {})
-                if user_binding_mode == "environment" or "example_id" not in args:
+                if binding_mode == "environment" or "example_id" not in args:
                     args["example_id"] = int(r.example_id)
 
                 call_id = f"eval_{int(r.example_id)}_{len(used_tools)}"
@@ -580,7 +439,7 @@ def run_eval_manager_tools(
         "correction_rate": sum(r["corrected_by_tools"] for r in rows_log) / max(1, n),
         "corruption_rate": sum(r["corrupted_by_tools"] for r in rows_log) / max(1, n),
         "binding_mode": binding_mode,
-        "subagents": sorted(pool._agents.keys()) if hasattr(pool, "_agents") else ["remote"],
+        "subagents": [k for k in SUBAGENT_KINDS if pool.has(k)],
     }
     write_jsonl(os.path.join(ctx.eval_root, "manager_tool_eval.jsonl"), rows_log)
     write_json(os.path.join(ctx.eval_root, "manager_tool_eval_report.json"), report)
@@ -605,69 +464,49 @@ def run_eval_manager_forced(
 ) -> Dict[str, Any]:
     """Evaluate the manager under a FIXED delegation sequence (no free choice).
 
-    For each forced advisor, the assistant tool-call turn and the frozen
-    advisor's output are injected into the history (mirroring cold-start SFT
-    construction); the manager generates only the final answer turn.
+    For each forced sub-agent, the assistant tool-call turn and the frozen
+    sub-agent's output are injected into the history (mirroring the tool turns
+    build_marginal_sft writes); the manager generates only the final answer
+    turn.
 
-    Running this once per advisor subset yields (a) the fixed-k baselines for
-    the RQ1 main table and the RQ2 Pareto plot, and (b) the per-question
-    inputs for the stopping oracle: oracle reward = max over subsets of
-    (correct - cost * k), computed offline from the saved jsonl files.
+    Running this once per sub-agent subset yields the fixed-k baselines and,
+    over all subsets, the per-question stopping oracle, computed offline from
+    the saved jsonl files.
 
     The verifier runs its generic audit here (no candidate is passed — the
     manager has not stated a draft in forced mode, and passing ground truth
     would leak).
     """
     import torch
-    from ..subagents.runtime import FrozenSubagent, SubagentPool
+    from ..subagents.runtime import build_subagent_pool
 
     forced = [t.strip() for t in (forced_tools or []) if t.strip() and t.strip() != "none"]
-    valid_kinds = {"extractor", "reasoner", "verifier"}
+    valid_kinds = set(SUBAGENT_KINDS)
     for t in forced:
         if t not in valid_kinds:
             raise ValueError(f"forced tool must be one of {sorted(valid_kinds)}, got {t!r}")
 
     if manager_dir is None:
         manager_dir = ctx.manager_sft_dir()
-    if not os.path.exists(manager_dir):
-        raise FileNotFoundError(f"manager_dir not found: {manager_dir}")
 
     binding_mode = _resolve_binding_mode(ctx, manager_dir)
 
     set_seed(ctx.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-    if subagent_server_url:
-        from ..subagents.runtime import RemoteSubagentPool
-        pool = RemoteSubagentPool(server_url=subagent_server_url)
-        print(f"[EVAL] using remote subagent pool -> {subagent_server_url}")
-    else:
-        pool = SubagentPool()
-        subagent_base_model = getattr(ctx, "subagent_base_model", "") or ctx.base_model
-        for kind in ("extractor", "reasoner", "verifier"):
-            adapter = ctx.adapter_path(kind)
-            if os.path.exists(adapter):
-                pool.register(FrozenSubagent(subagent_base_model, adapter, kind, device))
-        if not pool._agents:
-            raise FileNotFoundError(f"No subagent adapters found under {ctx.adapter_root}")
-        # Fail fast: forced eval often runs many subsets back-to-back;
-        # a missing adapter should die here, not at the first pool.call.
-        for t in forced:
-            if not pool.has(t):
-                raise FileNotFoundError(
-                    f"forced tool {t!r} has no adapter under {ctx.adapter_root}"
-                )
-    # pool = SubagentPool()
-    # for kind in ("extractor", "reasoner", "verifier"):
-    #     adapter = ctx.adapter_path(kind)
-    #     if os.path.exists(adapter):
-    #         pool.register(FrozenSubagent(ctx.base_model, adapter, kind, device))
-    # for t in forced:
-    #     if not pool.has(t):
-    #         raise FileNotFoundError(f"forced tool {t} has no adapter under {ctx.adapter_root}")
+    pool = build_subagent_pool(
+        ctx.base_model, {k: ctx.adapter_path(k) for k in SUBAGENT_KINDS}, subagent_server_url, device,
+    )
+    # Fail fast: forced eval often runs many subsets back-to-back;
+    # a missing adapter should die here, not at the first pool.call.
+    for t in forced:
+        if not pool.has(t):
+            raise FileNotFoundError(
+                f"forced tool {t!r} has no adapter under {ctx.adapter_root}"
+            )
 
-    tok, model = _load_manager_for_eval(ctx, manager_dir, device, dtype)
-    tools = _manager_tool_schemas(binding_mode if binding_mode == "argument" else "environment")
+    tok, model = load_manager(ctx.base_model, manager_dir, device, dtype)
+    tools = manager_tool_schemas(binding_mode)
 
     sample = list(rows)
     random.Random(ctx.seed).shuffle(sample)
@@ -708,7 +547,7 @@ def run_eval_manager_forced(
                 {"example_id": int(r.example_id)} if binding_mode == "argument" else {}
             )
             call_id = f"forced_{int(r.example_id)}_{i}"
-            messages.append(_tool_call_message(tool_name, args, call_id))
+            messages.append(tool_call_message(tool_name, args, call_id))
             tool_output = pool.call(
                 agent_kind=kind,
                 example_id=int(r.example_id),

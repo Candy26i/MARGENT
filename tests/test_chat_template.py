@@ -1,7 +1,14 @@
+"""Unit tests for src.manager.chat_template (no torch, no network)."""
 import copy
+import json
 import unittest
 
-from src.manager.chat_template import normalize_tool_call_arguments, render_chat
+from src.manager.chat_template import (
+    mask_prefix_len,
+    normalize_tool_call_arguments,
+    render_chat,
+    tool_call_message,
+)
 
 
 def _call_message(arguments):
@@ -112,6 +119,30 @@ class RenderChatTest(unittest.TestCase):
         self.assertEqual(len(tok.calls), 1)
         self.assertNotIn("enable_thinking", tok.calls[-1])
         self.assertIn("tools", tok.calls[-1])
+
+
+class MaskPrefixLenTest(unittest.TestCase):
+    def test_common_prefix_length(self):
+        self.assertEqual(mask_prefix_len([1, 2, 3], [1, 2, 3, 4, 5]), 3)
+        # A generation prompt whose tail (e.g. an empty <think></think> block)
+        # is absent from the full render must not mask the first response tokens.
+        self.assertEqual(mask_prefix_len([1, 2, 9, 9], [1, 2, 3, 4]), 2)
+        self.assertEqual(mask_prefix_len([], [1]), 0)
+
+
+class ToolCallMessageTest(unittest.TestCase):
+    def test_arguments_are_json_encoded_and_round_trip(self):
+        msg = tool_call_message("verifier_tool", {"current_draft": "B"}, "call_7", content="DRAFT_ANSWER_B")
+        self.assertEqual(msg["role"], "assistant")
+        self.assertEqual(msg["content"], "DRAFT_ANSWER_B")
+        call = msg["tool_calls"][0]
+        self.assertEqual((call["id"], call["type"], call["function"]["name"]), ("call_7", "function", "verifier_tool"))
+        self.assertEqual(json.loads(call["function"]["arguments"]), {"current_draft": "B"})
+        rendered = normalize_tool_call_arguments([msg])[0]["tool_calls"][0]["function"]["arguments"]
+        self.assertEqual(rendered, {"current_draft": "B"})
+
+    def test_content_defaults_to_empty(self):
+        self.assertEqual(tool_call_message("reasoner_tool", {}, "c")["content"], "")
 
 
 if __name__ == "__main__":

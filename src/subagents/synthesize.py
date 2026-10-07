@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import json
 import os
-import queue
 import random
 import re
 import threading
@@ -43,20 +42,14 @@ from tqdm import tqdm
 from ..benchmarks.base import StandardRow, question_hash as _question_hash
 from ..teachers.base import TeacherClient, TeacherResponse
 from ..utils.cache import TeacherCallCache
-from ..utils.io import append_jsonl, write_json, write_jsonl
+from ..utils.io import append_jsonl, write_json
 from ..utils.leakage import LeakageAuditor
 
 from .prompts.extractor import build_extractor_synth_prompt
 from .prompts.reasoner import build_reasoner_synth_prompt
 from .prompts.verifier import build_verifier_synth_prompt
 from .prompts.runtime_prompts import build_runtime_messages
-from .schemas import (
-    AgentKind,
-    ExtractorOutput,
-    ReasonerOutput,
-    VerifierOutput,
-    SCHEMA_REGISTRY,
-)
+from .schemas import AgentKind, SCHEMA_REGISTRY
 
 
 JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -302,7 +295,7 @@ def synthesize_subagent_data(
 
             try:
                 validated = _validate_schema(agent_kind, obj)
-            except ValidationError as e:
+            except ValidationError:
                 with _lock:
                     stats.schema_fail += 1
                 if log_path:

@@ -13,6 +13,13 @@ from ..benchmarks.base import StandardRow
 from .context import StageContext
 
 
+def _collection_binding_mode(ctx: StageContext) -> str:
+    """Tool-binding wording for collection and SFT: --binding_mode auto means
+    environment. train_manager_sft saves it to manager_run_config.json, which
+    the eval stages read back under auto."""
+    return "argument" if ctx.binding_mode == "argument" else "environment"
+
+
 # ---------------- Stage: counterfactual marginal-value SFT ----------------
 
 def run_build_marginal_sft(
@@ -30,14 +37,14 @@ def run_build_marginal_sft(
 ) -> Dict[str, Any]:
     """Collect paired counterfactual branches and build routing SFT data.
 
-    The direct answer is treated as the manager's initial draft.  Advisor
+    The direct answer is treated as the manager's initial draft.  Sub-agent
     sequences are forced breadth-first and ground truth selects the shortest
     sequence that actually corrects that draft.  No synthetic GT draft or
     per-call reward is used.
     """
     from ..manager.marginal_value import MarginalValueConfig, build_marginal_value_sft
 
-    binding = "argument" if ctx.binding_mode == "argument" else "environment"
+    binding = _collection_binding_mode(ctx)
     cfg = MarginalValueConfig(
         base_model=ctx.base_model,
         manager_dir=manager_dir or ctx.base_model,
@@ -99,6 +106,7 @@ def run_train_manager_sft(
         lora_r=lora_r,
         lora_alpha=lora_alpha,
         max_steps=max_steps,
+        binding_mode=_collection_binding_mode(ctx),
     )
     train_manager_sft(cfg)
     return {

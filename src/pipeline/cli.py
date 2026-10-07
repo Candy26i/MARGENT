@@ -63,7 +63,8 @@ def _parse_args() -> argparse.Namespace:
 
     # Context-level flags
     ctx_group = parser.add_argument_group("context", "Model, run namespace and output layout")
-    ctx_group.add_argument("--base_model", type=str, default="Qwen/Qwen3-0.6B")
+    ctx_group.add_argument("--base_model", type=str, default="Qwen/Qwen3-0.6B",
+                           help="Manager and sub-agent base model (paper: Qwen/Qwen3.5-9B).")
     ctx_group.add_argument("--teacher_id", type=str, default="default",
                            help="Logical id used to namespace outputs (e.g. mmlu_pro_gpt54).")
     ctx_group.add_argument("--subagent_teacher_id", type=str, default="",
@@ -73,7 +74,10 @@ def _parse_args() -> argparse.Namespace:
     ctx_group.add_argument("--output_root", type=str, default="outputs")
     ctx_group.add_argument("--seed", type=int, default=42)
     ctx_group.add_argument("--binding_mode", type=str, default="auto",
-                           choices=["auto", "environment", "argument"])
+                           choices=["auto", "environment", "argument"],
+                           help="Tool-binding wording. auto = environment for build_marginal_sft and "
+                                "train_manager_sft; the eval stages read manager_run_config.json from "
+                                "the manager directory (environment when absent).")
     ctx_group.add_argument("--task_description", type=str, default="")
     ctx_group.add_argument("--subagent_server_url", type=str, default="",
                            help="vLLM HTTP server URL for subagents, e.g. http://localhost:8000. "
@@ -134,9 +138,9 @@ def _parse_args() -> argparse.Namespace:
 
     # Split sizes
     split_group = parser.add_argument_group("splits", "Train/dev/test split sizes")
-    split_group.add_argument("--train_size", type=int, default=600)
-    split_group.add_argument("--dev_size", type=int, default=100)
-    split_group.add_argument("--test_size", type=int, default=200)
+    split_group.add_argument("--train_size", type=int, default=600, help="(paper, MedQA: 1400)")
+    split_group.add_argument("--dev_size", type=int, default=100, help="(paper, MedQA: 200)")
+    split_group.add_argument("--test_size", type=int, default=200, help="(paper, MedQA: 500)")
 
     # Synth
     synth_group = parser.add_argument_group(
@@ -172,7 +176,8 @@ def _parse_args() -> argparse.Namespace:
     # Subagent SFT (the --sft_* batch/sequence flags are shared with train_manager_sft)
     sft_group = parser.add_argument_group("subagent sft", "train_subagent (batch/sequence flags also apply to train_manager_sft)")
     sft_group.add_argument("--sft_epochs", type=int, default=3)
-    sft_group.add_argument("--sft_lr", type=float, default=2e-4)
+    sft_group.add_argument("--sft_lr", type=float, default=2e-4,
+                           help="Sub-agent SFT learning rate (the README walkthrough uses 5e-5).")
     sft_group.add_argument("--sft_max_seq_len", type=int, default=4096)
     sft_group.add_argument("--sft_bs", type=int, default=1)
     sft_group.add_argument("--sft_grad_accum", type=int, default=8)
@@ -189,13 +194,13 @@ def _parse_args() -> argparse.Namespace:
     mv_group.add_argument("--mv_n_samples", type=int, default=300,
                           help="Number of training questions used for marginal-value branch collection.")
     mv_group.add_argument("--mv_max_depth", type=int, default=1, choices=[1, 2, 3],
-                          help="Maximum number of distinct advisors in a forced counterfactual branch. Start with 1; use 2/3 only if the one-step oracle leaves useful headroom.")
+                          help="Maximum number of distinct sub-agents in a forced counterfactual branch. Start with 1; use 2/3 only if the one-step oracle leaves useful headroom (paper: 3 on MedQA and AQuA-RAT, 2 on MMLU-Pro and GPQA).")
     mv_group.add_argument("--mv_max_new_tokens", type=int, default=512,
                           help="Manager token budget for each counterfactual answer probe.")
     mv_group.add_argument("--mv_temperature", type=float, default=0.0,
                           help="Counterfactual manager sampling temperature. Keep 0 for paired, deterministic comparisons.")
     mv_group.add_argument("--mv_max_commit_rescue_ratio", type=float, default=1.0,
-                          help="Cap direct-correct commit decisions per rescued decision in marginal SFT. Negative keeps all commits; 1.0 gives a balanced cold start.")
+                          help="Cap direct-correct commit decisions per rescued decision in marginal SFT. Negative keeps all commits; 1.0 balances commit and rescue decisions (the paper's rho).")
     mv_group.add_argument("--mv_output_dir", type=str, default="",
                           help="Optional output directory for counterfactual records, report, and manager_sft_marginal.jsonl.")
     mv_group.add_argument("--exclude_sft_example_ids", action="append", default=[],
@@ -209,7 +214,8 @@ def _parse_args() -> argparse.Namespace:
                             help="Optional existing manager adapter/full checkpoint to continue SFT from instead of restarting from --base_model.")
     msft_group.add_argument("--manager_sft_output_dir", type=str, default="",
                             help="Optional explicit output directory for train_manager_sft.")
-    msft_group.add_argument("--manager_sft_lr", type=float, default=2e-5)
+    msft_group.add_argument("--manager_sft_lr", type=float, default=2e-5,
+                            help="Manager SFT learning rate (paper: 1e-5).")
     msft_group.add_argument("--manager_sft_epochs", type=int, default=1)
 
     # Eval
@@ -222,7 +228,7 @@ def _parse_args() -> argparse.Namespace:
     eval_group.add_argument("--eval_max_tool_calls", type=int, default=3)
     eval_group.add_argument("--eval_forced_tools", type=str, default="none",
                             help="Fixed delegation sequence for eval_manager_forced: comma-separated "
-                                 "advisor kinds, e.g. 'extractor,reasoner,verifier', or 'none' for "
+                                 "sub-agent kinds, e.g. 'extractor,reasoner,verifier', or 'none' for "
                                  "the zero-delegation baseline. Running every subset yields fixed-k "
                                  "baselines and the per-question stopping oracle.")
     eval_group.add_argument("--eval_out_tag", type=str, default="",
@@ -244,11 +250,11 @@ def _ctx_from(args) -> StageContext:
         output_root=args.output_root,
         seed=args.seed,
         binding_mode=args.binding_mode,
-        subagent_teacher_id=getattr(args, "subagent_teacher_id", ""),
+        subagent_teacher_id=args.subagent_teacher_id,
     )
 
 
-def _load_or_split(args) -> dict:
+def _load_medqa_splits(args) -> dict:
     """Load MedQA, split into train/dev/test, also serialize splits to disk."""
     cache = args.medqa_normalized_cache or os.path.join(
         args.output_root, "data", "medqa_normalized.jsonl"
@@ -277,22 +283,17 @@ def _load_or_split(args) -> dict:
 def _using_gpqa(args) -> bool:
     # NOTE: --gpqa_subsets has a non-empty default, so only the cache path
     # (or the load_gpqa stage itself) activates the GPQA branch.
-    return bool(getattr(args, "gpqa_normalized_cache", ""))
+    return bool(args.gpqa_normalized_cache)
 
 
 def _using_mmlu_pro(args) -> bool:
-    return bool(
-        getattr(args, "mmlu_pro_normalized_cache", "")
-        or getattr(args, "mmlu_pro_categories", "") != ""
-        # Explicit flag to use MMLU-Pro even with no category filter
-        or getattr(args, "use_mmlu_pro", False)
-    )
+    return bool(args.mmlu_pro_normalized_cache or args.mmlu_pro_categories != "")
 
 
 def _using_aqua_rat(args) -> bool:
     # NOTE: --aqua_rat_splits has a non-empty default, so only the cache path
     # (or the load_aqua_rat stage itself) activates the AQuA-RAT branch.
-    return bool(getattr(args, "aqua_rat_normalized_cache", ""))
+    return bool(args.aqua_rat_normalized_cache)
 
 
 def _load_gpqa_or_cache(args) -> List[StandardRow]:
@@ -352,51 +353,40 @@ def _load_aqua_rat_or_cache(args) -> List[StandardRow]:
     return rows
 
 
+# (stage, flag-based activation, loader, log tag); the first active entry wins.
+_BENCHMARKS = (
+    ("load_mmlu_pro", _using_mmlu_pro, _load_mmlu_pro_or_cache, "MMLU_PRO"),
+    ("load_gpqa", _using_gpqa, _load_gpqa_or_cache, "GPQA"),
+    ("load_aqua_rat", _using_aqua_rat, _load_aqua_rat_or_cache, "AQUA_RAT"),
+)
+
+
 def _load_benchmark_splits(args) -> dict:
     """Load the requested benchmark and return train/dev/test splits.
 
-    Priority (first active wins): mmlu_pro > gpqa > aqua_rat > medqa.
-    GPQA and MMLU-Pro have no predefined train/dev/test split, so rows are
-    split deterministically using --train_size / --dev_size / --test_size.
-    AQuA-RAT keeps its own train/validation/test labels (validation -> dev).
+    Priority (first active wins): mmlu_pro > gpqa > aqua_rat > medqa. A
+    benchmark is active when its stage is requested or its normalized cache
+    (for MMLU-Pro also a category filter) is set. GPQA and MMLU-Pro have no
+    predefined train/dev/test split, so rows are split deterministically using
+    --train_size / --dev_size / --test_size. AQuA-RAT keeps its own
+    train/validation/test labels (validation -> dev).
     """
-    # MMLU-Pro: active when --mmlu_pro_normalized_cache is set OR
-    #           --mmlu_pro_categories is non-empty OR stage == load_mmlu_pro
-    if getattr(args, "stage", "") == "load_mmlu_pro" or _using_mmlu_pro(args):
-        rows = _load_mmlu_pro_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[SPLIT/MMLU_PRO] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-        return {"all": rows, "train": train, "dev": dev, "test": test}
+    for stage, using, load, tag in _BENCHMARKS:
+        if args.stage == stage or using(args):
+            rows = load(args)
+            train, dev, test = _split_rows(
+                rows=rows, train_size=args.train_size, dev_size=args.dev_size,
+                test_size=args.test_size, seed=args.seed,
+            )
+            print(f"[SPLIT/{tag}] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
+            return {"all": rows, "train": train, "dev": dev, "test": test}
 
-    # GPQA: active when --gpqa_normalized_cache is set OR stage == load_gpqa
-    if getattr(args, "stage", "") == "load_gpqa" or _using_gpqa(args):
-        rows = _load_gpqa_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[SPLIT/GPQA] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-        return {"all": rows, "train": train, "dev": dev, "test": test}
-
-    # AQuA-RAT: active when --aqua_rat_normalized_cache is set OR stage == load_aqua_rat
-    if getattr(args, "stage", "") == "load_aqua_rat" or _using_aqua_rat(args):
-        rows = _load_aqua_rat_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[SPLIT/AQUA_RAT] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-        return {"all": rows, "train": train, "dev": dev, "test": test}
-
-    return _load_or_split(args)
+    return _load_medqa_splits(args)
 
 
 def _load_eval_rows(args) -> List[StandardRow]:
     data = _load_benchmark_splits(args)
-    if int(getattr(args, "test_size", 0) or 0) <= 0:
+    if args.test_size <= 0:
         return data["dev"]
     return data["test"] or data["dev"]
 
@@ -441,34 +431,11 @@ def main() -> None:
     ctx = _ctx_from(args)
 
     if args.stage == "load_medqa":
-        _load_or_split(args)
+        _load_medqa_splits(args)
         return
 
-    if args.stage == "load_gpqa":
-        rows = _load_gpqa_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[LOAD_GPQA] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-        return
-
-    if args.stage == "load_mmlu_pro":
-        rows = _load_mmlu_pro_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[LOAD_MMLU_PRO] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-        return
-
-    if args.stage == "load_aqua_rat":
-        rows = _load_aqua_rat_or_cache(args)
-        train, dev, test = _split_rows(
-            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-            test_size=args.test_size, seed=args.seed,
-        )
-        print(f"[LOAD_AQUA_RAT] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
+    if args.stage.startswith("load_"):
+        _load_benchmark_splits(args)
         return
 
     if args.stage == "synth_subagent":

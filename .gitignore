@@ -8,7 +8,6 @@ __pycache__/
 
 # Experiment outputs (data caches, adapters, checkpoints, traces)
 outputs/
-wandb/
 logs/
 *.log
 

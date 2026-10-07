@@ -1,3 +1,4 @@
+"""Unit tests for the AQuA-RAT record normaliser (no torch, no network)."""
 import unittest
 
 from src.benchmarks.aqua_rat import _from_record

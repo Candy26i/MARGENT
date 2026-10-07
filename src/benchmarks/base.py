@@ -11,8 +11,8 @@ def question_hash(question: str) -> str:
     """Stable content hash of a question text.
 
     example_id values are assigned by load order and silently change whenever a
-    normalized cache is rebuilt; cross-run bookkeeping (e.g. excluding SFT rows
-    from GRPO training) must key on this hash instead.
+    normalized cache is rebuilt; cross-run bookkeeping (e.g. excluding sub-agent
+    SFT rows from build_marginal_sft) must key on this hash instead.
     """
     norm = re.sub(r"\s+", " ", str(question).strip().lower())
     return hashlib.sha1(norm.encode("utf-8")).hexdigest()[:16]

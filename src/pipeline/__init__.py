@@ -1,5 +1,6 @@
+"""Pipeline package: StageContext and the run_* stage functions behind cli.py."""
 from .context import StageContext
-from .data import run_load_gpqa, run_load_medqa, run_load_mmlu_pro
+from .data import run_load_aqua_rat, run_load_gpqa, run_load_medqa, run_load_mmlu_pro
 from .subagent_stages import (
     run_eval_subagents,
     run_export_deepseek_subagent_prompts,
@@ -15,6 +16,7 @@ __all__ = [
     "run_load_medqa",
     "run_load_gpqa",
     "run_load_mmlu_pro",
+    "run_load_aqua_rat",
     "run_synthesize_subagent",
     "run_export_deepseek_subagent_prompts",
     "run_import_deepseek_subagent_responses",

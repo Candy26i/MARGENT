@@ -10,7 +10,7 @@ Control: the manager can request a targeted audit of its current draft answer.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 EXTRACTOR_RUNTIME_SYSTEM = """You are the Extractor sub-agent.

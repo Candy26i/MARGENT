@@ -1,7 +1,7 @@
 """Counterfactual marginal-value data for manager routing.
 
 The manager is evaluated from one shared, model-generated draft.  We then
-intervene on the next routing action by forcing each still-available advisor,
+intervene on the next routing action by forcing each still-available sub-agent,
 ask the manager to revise its answer, and continue breadth-first until a
 correct path is found or ``max_depth`` is reached.
 
@@ -10,17 +10,20 @@ never substituted for a model prediction.  This gives the routing policy the
 lexicographic supervision we actually want:
 
   1. prefer a correct trajectory to an incorrect trajectory;
-  2. among correct trajectories, prefer the one with fewer advisor calls;
+  2. among correct trajectories, prefer the one with fewer sub-agent calls;
   3. when neither branch is correct, do not teach a spurious no-call action.
 
 The efficiency tie-break, which an outcome-only reward cannot identify, is
 learned here from paired counterfactuals rather than from a global per-call
 penalty.
+
+"advisor" in the report keys (``by_advisor_one_step``, ``available_advisors``)
+and in older docs = sub-agent in the paper; the keys are kept so released
+reports and scripts/analyze_results.py still read.
 """
 from __future__ import annotations
 
 import itertools
-import json
 import os
 import random
 from dataclasses import dataclass
@@ -28,16 +31,16 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
     from ..benchmarks.base import StandardRow
-from .chat_template import render_chat
+from ..subagents import SUBAGENT_KINDS
+from .chat_template import render_chat, tool_call_message
+from .loading import load_manager
 from .prompt import (
     build_manager_system_prompt,
     build_manager_user_message,
+    manager_tool_schemas,
     parse_draft_answer,
     parse_final_answer,
 )
-
-
-ADVISOR_KINDS: Tuple[str, ...] = ("extractor", "reasoner", "verifier")
 
 _DIRECT_PROBE = (
     "Training-time counterfactual probe: do not call a tool. State your current "
@@ -97,59 +100,6 @@ def _draft_only(label: str) -> str:
     return f"DRAFT_ANSWER_{_answer_token(label)}"
 
 
-def _tool_schemas(binding_mode: str) -> List[Dict[str, Any]]:
-    required = ["example_id"] if binding_mode == "argument" else []
-    properties: Dict[str, Any] = {}
-    if binding_mode == "argument":
-        properties["example_id"] = {
-            "type": "integer",
-            "description": "The current example ID.",
-        }
-    verifier_properties = dict(properties)
-    verifier_properties["current_draft"] = {
-        "type": "string",
-        "description": "The current draft answer key.",
-    }
-    return [
-        {
-            "type": "function",
-            "function": {
-                "name": "extractor_tool",
-                "description": "Extract decision-relevant factual signals.",
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "reasoner_tool",
-                "description": "Produce a structured reasoning scaffold.",
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "verifier_tool",
-                "description": "Audit the current draft for errors.",
-                "parameters": {
-                    "type": "object",
-                    "properties": verifier_properties,
-                    "required": required,
-                },
-            },
-        },
-    ]
-
-
 def _tool_call_message(
     tool_kind: str,
     example_id: int,
@@ -162,69 +112,7 @@ def _tool_call_message(
         args["example_id"] = int(example_id)
     if tool_kind == "verifier":
         args["current_draft"] = current_draft
-    return {
-        "role": "assistant",
-        "content": _draft_only(current_draft),
-        "tool_calls": [{
-            "id": call_id,
-            "type": "function",
-            "function": {
-                "name": f"{tool_kind}_tool",
-                "arguments": json.dumps(args, ensure_ascii=False),
-            },
-        }],
-    }
-
-
-def _load_manager(cfg: MarginalValueConfig, device: str, dtype: Any):
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    source = cfg.manager_dir or cfg.base_model
-    tokenizer = AutoTokenizer.from_pretrained(source, trust_remote_code=True)
-    if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.padding_side = "left"
-
-    is_local_adapter = (
-        os.path.isdir(source)
-        and os.path.exists(os.path.join(source, "adapter_config.json"))
-    )
-    if is_local_adapter:
-        from peft import PeftModel
-
-        base = AutoModelForCausalLM.from_pretrained(
-            cfg.base_model, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-        model = PeftModel.from_pretrained(base, source).to(device)
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            source, torch_dtype=dtype, trust_remote_code=True
-        ).to(device)
-    model.eval()
-    return tokenizer, model
-
-
-def _build_pool(cfg: MarginalValueConfig, device: str):
-    from ..subagents.runtime import FrozenSubagent, RemoteSubagentPool, SubagentPool
-
-    if cfg.subagent_server_url:
-        return RemoteSubagentPool(
-            server_url=cfg.subagent_server_url,
-            registered_kinds=list(ADVISOR_KINDS),
-        )
-
-    pool = SubagentPool()
-    adapters = {
-        "extractor": cfg.extractor_adapter,
-        "reasoner": cfg.reasoner_adapter,
-        "verifier": cfg.verifier_adapter,
-    }
-    for kind, adapter in adapters.items():
-        if adapter and os.path.exists(adapter):
-            pool.register(FrozenSubagent(cfg.base_model, adapter, kind, device))
-    if not any(pool.has(kind) for kind in ADVISOR_KINDS):
-        raise FileNotFoundError("No subagent adapters are available for marginal-value collection.")
-    return pool
+    return tool_call_message(f"{tool_kind}_tool", args, call_id, content=_draft_only(current_draft))
 
 
 def _generate_answer(
@@ -285,7 +173,7 @@ def choose_preferred_sequence(
 
 
 def summarize_counterfactuals(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
-    """Compute draft-conditioned oracle and per-advisor marginal statistics."""
+    """Compute draft-conditioned oracle and per-sub-agent marginal statistics."""
     n = len(records)
     n_valid_direct = sum(bool(r.get("direct_valid")) for r in records)
     n_direct_correct = sum(bool(r.get("direct_correct")) for r in records)
@@ -307,8 +195,8 @@ def summarize_counterfactuals(records: Sequence[Dict[str, Any]]) -> Dict[str, An
             first = str(seq[0])
             first_tool_counts[first] = first_tool_counts.get(first, 0) + 1
 
-    by_advisor: Dict[str, Dict[str, Any]] = {}
-    for kind in ADVISOR_KINDS:
+    by_subagent: Dict[str, Dict[str, Any]] = {}
+    for kind in SUBAGENT_KINDS:
         one_step = []
         for row in records:
             for branch in row.get("branches", []):
@@ -319,7 +207,7 @@ def summarize_counterfactuals(records: Sequence[Dict[str, Any]]) -> Dict[str, An
         corruption = sum(direct_ok and (not call_ok) for direct_ok, call_ok in one_step)
         both_correct = sum(direct_ok and call_ok for direct_ok, call_ok in one_step)
         both_wrong = sum((not direct_ok) and (not call_ok) for direct_ok, call_ok in one_step)
-        by_advisor[kind] = {
+        by_subagent[kind] = {
             "n": len(one_step),
             "rescue_count": rescue,
             "corruption_count": corruption,
@@ -340,7 +228,7 @@ def summarize_counterfactuals(records: Sequence[Dict[str, Any]]) -> Dict[str, An
         "n_unsolved": n - n_oracle_correct,
         "preferred_depth_counts": depth_counts,
         "preferred_first_tool_counts": first_tool_counts,
-        "by_advisor_one_step": by_advisor,
+        "by_advisor_one_step": by_subagent,
     }
 
 
@@ -429,11 +317,12 @@ def build_marginal_value_sft(cfg: MarginalValueConfig) -> Dict[str, Any]:
     """Collect counterfactual branches and write shortest-success SFT data."""
     import torch
     from ..benchmarks.base import question_hash
+    from ..subagents.runtime import build_subagent_pool
     from ..utils.io import write_json, write_jsonl
     from ..utils.seed import set_seed
 
-    if cfg.max_depth < 1 or cfg.max_depth > len(ADVISOR_KINDS):
-        raise ValueError(f"max_depth must be in [1, {len(ADVISOR_KINDS)}]")
+    if cfg.max_depth < 1 or cfg.max_depth > len(SUBAGENT_KINDS):
+        raise ValueError(f"max_depth must be in [1, {len(SUBAGENT_KINDS)}]")
     if cfg.binding_mode not in {"argument", "environment"}:
         raise ValueError("binding_mode must be argument or environment")
 
@@ -441,10 +330,19 @@ def build_marginal_value_sft(cfg: MarginalValueConfig) -> Dict[str, Any]:
     os.makedirs(cfg.out_dir, exist_ok=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-    tokenizer, model = _load_manager(cfg, device, dtype)
-    pool = _build_pool(cfg, device)
-    tools = _tool_schemas(cfg.binding_mode)
-    available = [kind for kind in ADVISOR_KINDS if pool.has(kind)]
+    tokenizer, model = load_manager(cfg.base_model, cfg.manager_dir or cfg.base_model, device, dtype)
+    pool = build_subagent_pool(
+        cfg.base_model,
+        {
+            "extractor": cfg.extractor_adapter,
+            "reasoner": cfg.reasoner_adapter,
+            "verifier": cfg.verifier_adapter,
+        },
+        cfg.subagent_server_url,
+        device,
+    )
+    tools = manager_tool_schemas(cfg.binding_mode)
+    available = [kind for kind in SUBAGENT_KINDS if pool.has(kind)]
 
     sample = list(cfg.rows)
     random.Random(cfg.seed).shuffle(sample)

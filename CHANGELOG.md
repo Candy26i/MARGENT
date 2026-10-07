@@ -29,14 +29,54 @@ Moved, behaviour unchanged:
 - `src/pipeline/stages.py` split into `context.py`, `data.py`,
   `subagent_stages.py`, `manager_stages.py` and `eval_stages.py`;
 - the three copies of the tool-call-argument normaliser and chat renderer
-  replaced by `src/manager/chat_template.py` (unit-tested).
+  replaced by `src/manager/chat_template.py` (unit-tested), which keeps the
+  `stages.py` / `marginal_value.py` behaviour (invalid or non-mapping
+  tool-call arguments become `{}`); the `evolve.py` copy that
+  `train_manager_sft` used had wrapped unparsable strings as
+  `{"input": ...}`. Unreachable with pipeline-written JSONL, where every
+  argument string is `json.dumps` of a dict;
+- one manager loader (`src/manager/loading.py`), one sub-agent pool builder
+  (`build_subagent_pool` in `src/subagents/runtime.py`), one
+  `tool_call_message` and one `mask_prefix_len` (`chat_template.py`) replace
+  the per-stage copies; the sub-agent SFT/runtime render through
+  `chat_template.render_chat` (identical output: their messages carry no tool
+  calls). Dead code dropped: `exploration_hint` / `_token_to_label` in
+  `prompt.py` (the rendered system prompt is byte-identical).
+
+Changed defaults:
+
+- `train_manager_sft` reads `outputs/manager/<id>/marginal_value/manager_sft_marginal.jsonl`
+  and writes `outputs/manager/<id>/sft_marginal/` (was
+  `evolve/manager_sft_from_failures.jsonl` and `sft_evolved/`);
+  `eval_manager`, `eval_manager_tools` and `eval_manager_forced` default
+  `--eval_manager_dir` to that `sft_marginal/` directory (was the GRPO
+  directory). Legacy `sft_evolved/` and `grpo/` checkpoints are not looked up;
+  pass them explicitly.
+- `--binding_mode auto` means the same thing on both sides: `build_marginal_sft`
+  and `train_manager_sft` use environment binding, `train_manager_sft` saves it
+  to `manager_run_config.json` next to the checkpoint (the removed GRPO trainer
+  used to write that file, so nothing on v0.2 did), and the eval stages read it
+  back, falling back to environment instead of argument when the file is
+  absent (e.g. for the untrained base model).
+- The eval stages render the tool schemas the manager was trained on
+  (`manager_tool_schemas` in `src/manager/prompt.py`, the former
+  `marginal_value._tool_schemas` text); the eval-only copy with different
+  descriptions is gone.
+- `--eval_manager_dir` accepts a Hugging Face model id or a full checkpoint
+  directory in all three eval stages (`eval_manager_tools` /
+  `eval_manager_forced` required a local directory and treated anything
+  without `config.json` as an adapter).
+- `requirements.txt`: `trl`, `wandb` and `pyyaml` dropped (nothing imports
+  them), `requests` added (RemoteSubagentPool); `accelerate` stays
+  (`transformers.Trainer` needs it).
 
 Added:
 
 - AQuA-RAT loader (`src/benchmarks/aqua_rat.py`, stage `load_aqua_rat`,
   `--aqua_rat_*` flags; the paper's test split, n = 254) with
   `tests/test_aqua_rat.py`;
-- `tests/test_chat_template.py`; CI runs `unittest discover`;
+- `tests/test_chat_template.py`; CI runs `unittest discover` and pyflakes
+  (zero warnings);
 - the CLI parser is grouped per stage family, so `--help` reads by stage;
 - `src.utils` no longer imports torch at import time, so the unit tests run
   on a stdlib-only Python.
