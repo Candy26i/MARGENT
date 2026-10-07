@@ -601,7 +601,7 @@
           <tr><td>文档</td><td>README 含方法、目录结构、安装、数据、完整 MedQA 复现流程和 stage 表；主协议放在 <code>docs/EXPERIMENTS.md</code>；ADC 方案归档到 <code>docs/history/</code>；<code>build_marginal_sft</code> 的命令补上 <code>--exclude_sft_example_ids</code>，排除子智能体 SFT 题目</td></tr>
           <tr><td>结果</td><td><code>results/predecessor_scaling/main_results.json</code>（附录 B）；<code>results/medqa_marginal_v1/</code>（附录 D 的 8B 运行：采集记录、dev / test 逐题轨迹）；两个只依赖标准库的脚本 <code>scripts/summarize_main_results.py</code> 和 <code>scripts/analyze_results.py</code>（Wilson 区间 + 精确 McNemar），没有 GPU 也能复算 §5 的全部数字</td></tr>
           <tr><td>未包含</td><td>数据集文件（由 loader 自动下载；GPQA 的条款不允许公开明文）、教师生成的 SFT 数据（203 MB）、内部规划文档 <code>PAPER_READINESS.md</code></td></tr>
-          <tr><td>验证</td><td>所有 <code>.py</code> 文件语法解析通过；10 个单元测试通过；shell 脚本 <code>bash -n</code> 通过；README 和 <code>docs/EXPERIMENTS.md</code> 中引用的每个 CLI 参数和 stage 名都与 <code>cli.py</code> 核对过</td></tr>
+          <tr><td>验证</td><td>所有 <code>.py</code> 文件语法解析通过；22 个单元测试通过（精简前 10 个）；shell 脚本 <code>bash -n</code> 通过；README 和 <code>docs/EXPERIMENTS.md</code> 中引用的每个 CLI 参数和 stage 名都与 <code>cli.py</code> 核对过</td></tr>
         </tbody>
       </table>
     </div>
