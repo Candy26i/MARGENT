@@ -514,6 +514,7 @@
     <h3 id="diag-scaling">5.2 前期 4B / 8B / 9B 实验（附录 B）</h3>
     <div class="prose">
       <p>论文表 6 的要点：最好的前期多智能体变体相对同规模 base 模型的增益在 9B 上明显缩小，9B GPQA 为零。这些实验做在边际价值实验之前。作者在最终四个任务中的三个上，用 Qwen3-4B、Qwen3-8B、Qwen3.5-9B 评估了冷启动、通用（Generic）和任务专用（Specific）的多智能体训练变体。开发集每任务 100–200 题。表 6 取每个（任务，规模）格子里最好的变体减去同规模 base。因为是跨多个变体取最大值，而且样本小，论文把它定位为「动机性张力的证据」，不是 scaling law，也不是主比较。</p>
+      <p>作者提供的 9B 运行命令补充了这组实验的设置：9B manager（<code>--base_model Qwen/Qwen3.5-9B</code>）从冷启动 SFT（<code>sft_coldstart</code>）初始化，子智能体取自 <code>ds_medqa_8B</code> 命名空间（8B 训练的 LoRA 子智能体），1200 道训练题，200 步 GRPO，每题 6 个采样，温度 1.0，β = 0.01。</p>
     </div>
     <div class="table-wrap">
       <table>
@@ -568,14 +569,14 @@
           <tr><td>学到的委派或提交策略的评测</td><td><code>eval_manager_tools</code>；报告里 <code>initial_draft_accuracy</code> = 候选答案准确率，<code>avg_tool_calls</code> = 调用 / 题，<code>correction_rate</code> / <code>corruption_rate</code></td></tr>
           <tr><td>强制一次 Verifier / 强制全部三个</td><td><code>eval_manager_forced --eval_forced_tools verifier</code> / <code>extractor,reasoner,verifier</code></td></tr>
           <tr><td>调用差</td><td>评测报告里的 <code>draft_conditioned_call_gap</code></td></tr>
-          <tr><td>只看结果的 GRPO 继续训练（附录 D 诊断）</td><td><code>train_manager_grpo</code>，<code>scripts/train_manager_grpo_multigpu.sh</code></td></tr>
+          <tr><td>只看结果的 GRPO 继续训练（附录 D 诊断）</td><td>已移出主分支，保留在 <code>legacy</code> 分支（标签 <code>v0.1-full</code>）</td></tr>
         </tbody>
       </table>
     </div>
     <div class="prose">
       <h3>快照缺什么</h3>
       <ul>
-        <li><b>AQuA-RAT 加载器。</b>快照里只有 MedQA、MMLU-Pro、GPQA（以及论文没用的 LegalBench）的加载器。</li>
+        <li><b>AQuA-RAT 加载器：已补上。</b>原快照只有 MedQA、MMLU-Pro、GPQA 的加载器；本次精简新增 <code>load_aqua_rat</code>（论文用的 test split，254 题），LegalBench 加载器移到 legacy 分支。</li>
         <li><b>论文表 1–5 的 9B 主实验记录。</b>逐题分支和评测记录随论文的 dashboard 导出，不在快照中。快照里的两组结果只对应附录 B 和附录 D。</li>
         <li><b>候选匹配的强制 Verifier 基线。</b>论文记录中的强制 Verifier 没有把同一个委派前的候选答案传给 Verifier。快照里对应的 stage 是 <code>eval_manager_forced</code>；它是否传入候选答案，本次没有核实。<span class="todo">待确认</span></li>
       </ul>
@@ -591,7 +592,8 @@
         <caption>表 R7. 本阶段完成的代码整理。</caption>
         <thead><tr><th>类别</th><th>处理</th></tr></thead>
         <tbody>
-          <tr class="hl"><td>对齐论文</td><td>README 按 MARGENT 重写，附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 开头加范围说明（GRPO 只是诊断，不是主方法）；论文图 1 加入 <code>docs/figures/margent_overview.png</code>；<code>results/README.md</code> 说明两组记录分别对应附录 B 和附录 D</td></tr>
+          <tr class="hl"><td>精简（10-07）</td><td>按论文主线精简，老师指出的"代码太乱"主要在这一步处理：删除 GRPO / evolve 循环 / ADC 奖励 / SFT-anchor / 冷启动 / LegalBench（全部保留在 <code>legacy</code> 分支，标签 <code>v0.1-full</code>）；2042 行的 <code>stages.py</code> 拆成 <code>data / subagent_stages / manager_stages / eval_stages</code> 四个模块；三份重复的 tool-call 处理合并为 <code>chat_template.py</code>，manager 加载、子智能体池、工具 schema 各只保留一份；CLI 从 20 个 stage 减到 14 个，参数按阶段分组；新增 AQuA-RAT 加载器；单元测试增至 22 个，CI 加 pyflakes。共改动 57 个文件，+3045 / −6932 行。四个核对 agent 逐函数比对了搬动前后的代码，保留阶段的行为不变，改动的默认值记录在 <code>CHANGELOG.md</code></td></tr>
+          <tr><td>对齐论文</td><td>README 按 MARGENT 重写，附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 开头加范围说明（GRPO 只是诊断，不是主方法）；论文图 1 加入 <code>docs/figures/margent_overview.png</code>；<code>results/README.md</code> 说明两组记录分别对应附录 B 和附录 D</td></tr>
           <tr><td>冗余文件</td><td>删除 <code>.bak</code> / <code>.bak_*</code> / <code>.DS_Store</code>；删除依赖旧 rule_applier 流程的脚本 <code>generate_openai_us4_all.py</code>；删除一个名为 ZeRO-3 但内容与 <code>zero2_ga2</code> 完全相同的配置，把真正的 ZeRO-3 配置改名为 <code>accelerate_zero3.yaml</code></td></tr>
           <tr><td>关键修复</td><td>原 <code>.gitignore</code> 忽略了 <code>src/subagents/prompts/reasoner.py</code> 和 <code>runtime_prompts.py</code>。这两个是核心 prompt 文件，直接推到 GitHub 的话仓库将无法运行。现已纳入仓库</td></tr>
           <tr><td>代码清理</td><td><code>routing_anchor.py</code> 末尾追加的 monkey-patch 已并入 <code>_render_chat</code>。原补丁会把 <code>tools</code> 列表也当成消息处理，给每个工具 schema 加上 <code>"tool_calls": null</code>，从而改变 SFT-anchor 渲染出的 system prompt。新实现只处理消息。该路径只在 <code>--mgr_sft_anchor_coef &gt; 0</code> 时启用，不影响主方法</td></tr>
@@ -642,7 +644,7 @@
     <div class="prose">
       <ol>
         <li><b>把 9B 主实验的逐题记录纳入发布包</b>（checklist 和附录 E 的要求）：表 1–5 的分支与评测记录、提示词、LoRA 与优化器设置、每个 split 的稳定 example id、逐题输出。</li>
-        <li><b>补上 AQuA-RAT 加载器</b>，让四个 benchmark 都能从快照跑通。</li>
+        <li><b>在有 GPU 的机器上把精简后的代码跑通一遍</b>：四个 benchmark 各走一次采集 → 蒸馏 → 评测，确认与论文表 1–5 的流程一致（AQuA-RAT 加载器已补上，但本地无 GPU，没有端到端运行过）。</li>
         <li><b>多种子与配对置信区间：</b>主方法和最强基线各跑多个种子；用逐题输出做配对 bootstrap 或 McNemar 检验，而不是只报单次运行。</li>
         <li><b>候选匹配的强制 Verifier 基线：</b>把同一个委派前的候选答案传给 Verifier，得到匹配的路由消融。</li>
         <li><b>独立的单模型基线：</b>plain-answer 提示、self-consistency（多次采样投票，<code>eval_manager --eval_sc_k K</code>），回应「端到端差异不是相对单模型基线的增益」这一限定。</li>

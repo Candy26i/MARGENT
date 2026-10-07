@@ -546,12 +546,12 @@
           <tr><td><code>train_manager_sft</code></td><td>Marginal-value distillation (Sec. 3.3)</td><td>SFT of the full manager on <code>manager_sft_marginal.jsonl</code></td></tr>
           <tr><td><code>eval_manager_tools</code></td><td>Learned delegate-or-commit policy</td><td>Report fields: <code>initial_draft_accuracy</code> = candidate, <code>avg_tool_calls</code>, <code>draft_conditioned_call_gap</code> = call gap, correction and corruption rates</td></tr>
           <tr><td><code>eval_manager_forced --eval_forced_tools</code></td><td>Forced one Verifier call; force all three</td><td><code>verifier</code> or <code>extractor,reasoner,verifier</code></td></tr>
-          <tr><td><code>train_manager_grpo</code></td><td>Appendix D outcome-only GRPO continuation</td><td>Diagnostic only; not part of the method</td></tr>
+          <tr><td><code>load_aqua_rat</code></td><td>The paper's fourth benchmark (AQuA-RAT, test split n = 254)</td><td>Added in the 2026-10-07 simplification; the GRPO continuation code (Appendix D) now lives on the <code>legacy</code> branch, tag <code>v0.1-full</code></td></tr>
         </tbody>
       </table>
     </div>
     <div class="prose">
-      <p>Two things are not in the snapshot. There is no loader for AQuA-RAT, the paper's fourth benchmark (a LegalBench loader is present but unused in the paper). The paper's Qwen3.5-9B per-example records behind Tables 1 to 5 are also absent; they were exported with the paper's dashboard. The two released record sets, the Appendix B predecessor diagnostic and the Appendix D 8B run, can be summarised without a GPU:</p>
+      <p>The repository was simplified to the method on 2026-10-07 (see <code>CHANGELOG.md</code>): the GRPO, reward-shaping, failure-recycling and cold-start code moved to the <code>legacy</code> branch, the 2,000-line stage file was split into four modules, duplicated helpers were merged, and an AQuA-RAT loader was added. One thing is still not in the snapshot: the paper's Qwen3.5-9B per-example records behind Tables 1 to 5, which were exported with the paper's dashboard. The two released record sets, the Appendix B predecessor diagnostic and the Appendix D 8B run, can be summarised without a GPU:</p>
       <pre><code>cd supplementary_code
 python scripts/summarize_main_results.py                     # Appendix B: all 28 cells with Δ vs base and Δ vs cold start
 python scripts/analyze_results.py results/medqa_marginal_v1   # Appendix D 8B run: Wilson 95% intervals, exact McNemar tests</code></pre>
