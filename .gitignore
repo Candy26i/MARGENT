@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.env.*
+
+# Experiment outputs (data caches, adapters, checkpoints, traces)
+outputs/
+wandb/
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+*.bak
+*.bak_*
