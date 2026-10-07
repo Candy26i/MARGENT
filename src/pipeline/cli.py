@@ -30,7 +30,7 @@ from typing import List
 from ..benchmarks.base import StandardRow
 from ..utils.io import read_jsonl
 from .context import StageContext
-from .data import _split_rows, run_load_gpqa, run_load_medqa, run_load_mmlu_pro
+from .data import _split_rows, run_load_aqua_rat, run_load_gpqa, run_load_medqa, run_load_mmlu_pro
 from .subagent_stages import (
     run_eval_subagents,
     run_export_deepseek_subagent_prompts,
@@ -48,6 +48,7 @@ def _parse_args() -> argparse.Namespace:
         "load_medqa",
         "load_mmlu_pro",
         "load_gpqa",
+        "load_aqua_rat",
         "synth_subagent",
         "export_deepseek_jsonl",
         "import_deepseek_jsonl",
@@ -119,6 +120,17 @@ def _parse_args() -> argparse.Namespace:
                             help="Comma-separated HF split names to load.")
     mmlu_group.add_argument("--mmlu_pro_normalized_cache", type=str, default="")
     mmlu_group.add_argument("--mmlu_pro_refresh_cache", action="store_true")
+
+    # AQuA-RAT loading
+    aqua_group = parser.add_argument_group("aqua_rat", "AQuA-RAT loading (load_aqua_rat)")
+    aqua_group.add_argument("--aqua_rat_hf_dataset", type=str, default="deepmind/aqua_rat")
+    aqua_group.add_argument("--aqua_rat_splits", type=str, default="test",
+                            help="Comma-separated HF split names to load (train, validation, test). "
+                                 "Default: test (the paper's 254-question evaluation set).")
+    aqua_group.add_argument("--aqua_rat_hf_cache", type=str, default="")
+    aqua_group.add_argument("--aqua_rat_max", type=int, default=0)
+    aqua_group.add_argument("--aqua_rat_normalized_cache", type=str, default="")
+    aqua_group.add_argument("--aqua_rat_refresh_cache", action="store_true")
 
     # Split sizes
     split_group = parser.add_argument_group("splits", "Train/dev/test split sizes")
@@ -277,6 +289,12 @@ def _using_mmlu_pro(args) -> bool:
     )
 
 
+def _using_aqua_rat(args) -> bool:
+    # NOTE: --aqua_rat_splits has a non-empty default, so only the cache path
+    # (or the load_aqua_rat stage itself) activates the AQuA-RAT branch.
+    return bool(getattr(args, "aqua_rat_normalized_cache", ""))
+
+
 def _load_gpqa_or_cache(args) -> List[StandardRow]:
     cache = args.gpqa_normalized_cache or os.path.join(
         args.output_root, "data", "gpqa_normalized.jsonl"
@@ -316,12 +334,31 @@ def _load_mmlu_pro_or_cache(args) -> List[StandardRow]:
     return rows
 
 
+def _load_aqua_rat_or_cache(args) -> List[StandardRow]:
+    cache = args.aqua_rat_normalized_cache or os.path.join(
+        args.output_root, "data", "aqua_rat_normalized.jsonl"
+    )
+    if args.aqua_rat_refresh_cache or not os.path.exists(cache):
+        rows = run_load_aqua_rat(
+            dataset_name=args.aqua_rat_hf_dataset,
+            splits=args.aqua_rat_splits,
+            hf_cache_dir=(args.aqua_rat_hf_cache or None),
+            max_examples=args.aqua_rat_max,
+            cache_normalized_path=cache,
+        )
+    else:
+        rows = [StandardRow(**r) for r in read_jsonl(cache)]
+        print(f"[LOAD_AQUA_RAT] loaded cached {len(rows)} rows -> {cache}")
+    return rows
+
+
 def _load_benchmark_splits(args) -> dict:
     """Load the requested benchmark and return train/dev/test splits.
 
-    Priority (first active wins): mmlu_pro > gpqa > medqa.
+    Priority (first active wins): mmlu_pro > gpqa > aqua_rat > medqa.
     GPQA and MMLU-Pro have no predefined train/dev/test split, so rows are
     split deterministically using --train_size / --dev_size / --test_size.
+    AQuA-RAT keeps its own train/validation/test labels (validation -> dev).
     """
     # MMLU-Pro: active when --mmlu_pro_normalized_cache is set OR
     #           --mmlu_pro_categories is non-empty OR stage == load_mmlu_pro
@@ -342,6 +379,16 @@ def _load_benchmark_splits(args) -> dict:
             test_size=args.test_size, seed=args.seed,
         )
         print(f"[SPLIT/GPQA] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
+        return {"all": rows, "train": train, "dev": dev, "test": test}
+
+    # AQuA-RAT: active when --aqua_rat_normalized_cache is set OR stage == load_aqua_rat
+    if getattr(args, "stage", "") == "load_aqua_rat" or _using_aqua_rat(args):
+        rows = _load_aqua_rat_or_cache(args)
+        train, dev, test = _split_rows(
+            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
+            test_size=args.test_size, seed=args.seed,
+        )
+        print(f"[SPLIT/AQUA_RAT] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
         return {"all": rows, "train": train, "dev": dev, "test": test}
 
     return _load_or_split(args)
@@ -413,6 +460,15 @@ def main() -> None:
             test_size=args.test_size, seed=args.seed,
         )
         print(f"[LOAD_MMLU_PRO] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
+        return
+
+    if args.stage == "load_aqua_rat":
+        rows = _load_aqua_rat_or_cache(args)
+        train, dev, test = _split_rows(
+            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
+            test_size=args.test_size, seed=args.seed,
+        )
+        print(f"[LOAD_AQUA_RAT] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
         return
 
     if args.stage == "synth_subagent":

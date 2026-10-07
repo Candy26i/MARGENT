@@ -110,7 +110,7 @@ benchmark into `outputs/data/*.jsonl`:
 | MedQA-USMLE (4 options) | `load_medqa` | official train/dev/test splits |
 | MMLU-Pro | `load_mmlu_pro` | `--mmlu_pro_splits test` |
 | GPQA | `load_gpqa`, `scripts/build_gpqa_splits.py` | gated: accept the terms on Hugging Face and `huggingface-cli login`; the split script holds out 100 Diamond questions, disjoint from the 446-question collection pool |
-| AQuA-RAT | not in this snapshot | the paper's fourth benchmark; add a loader following `src/benchmarks/base.py:StandardRow` |
+| AQuA-RAT | `load_aqua_rat` | `--aqua_rat_splits test` (default): the 254-question test split used in the paper (n = 254); `deepmind/aqua_rat`, config `raw` |
 | LegalBench | loaded on first use via `--legalbench_configs` | present in the code, not used in the paper |
 
 ## Reproducing the pipeline (MedQA walkthrough)
@@ -220,7 +220,7 @@ untested at scale.
 
 | Stage | Purpose |
 |---|---|
-| `load_medqa` / `load_gpqa` / `load_mmlu_pro` | download and normalise benchmarks |
+| `load_medqa` / `load_gpqa` / `load_mmlu_pro` / `load_aqua_rat` | download and normalise benchmarks |
 | `synth_subagent` | teacher synthesis of sub-agent SFT data with quality gates |
 | `export_deepseek_jsonl` / `import_deepseek_jsonl` | offline-teacher alternative to `synth_subagent` |
 | `train_subagent` | LoRA-SFT one sub-agent |

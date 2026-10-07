@@ -8,6 +8,7 @@ from __future__ import annotations
 import random
 from typing import Dict, List, Optional, Tuple
 
+from ..benchmarks.aqua_rat import load_aqua_rat
 from ..benchmarks.base import StandardRow
 from ..benchmarks.gpqa import load_gpqa
 from ..benchmarks.medqa import load_medqa
@@ -162,4 +163,27 @@ def run_load_mmlu_pro(
     if cache_normalized_path:
         write_jsonl(cache_normalized_path, [r.to_dict() for r in rows])
         print(f"[LOAD_MMLU_PRO] cached normalized rows -> {cache_normalized_path}")
+    return rows
+
+
+# --------------------- Stage: AQuA-RAT loading ---------------------
+
+def run_load_aqua_rat(
+    dataset_name: str = "deepmind/aqua_rat",
+    splits: str = "test",
+    hf_cache_dir: Optional[str] = None,
+    max_examples: int = 0,
+    cache_normalized_path: Optional[str] = None,
+) -> List[StandardRow]:
+    split_list = [s.strip() for s in splits.split(",") if s.strip()]
+    rows = load_aqua_rat(
+        dataset_name=dataset_name,
+        splits=split_list,
+        hf_cache_dir=hf_cache_dir,
+        max_examples=max_examples,
+    )
+    print(f"[LOAD_AQUA_RAT] loaded {len(rows)} rows  splits={splits}")
+    if cache_normalized_path:
+        write_jsonl(cache_normalized_path, [r.to_dict() for r in rows])
+        print(f"[LOAD_AQUA_RAT] cached normalized rows -> {cache_normalized_path}")
     return rows
