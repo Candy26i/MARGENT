@@ -11,9 +11,11 @@ on MedQA (n = 100), LegalBench (n = 200), GPQA (n = 100) and MMLU-Pro (n = 200)
 development sets for Qwen3-4B, Qwen3-8B and Qwen3.5-9B managers, each as
 direct-answer baseline, cold-start SFT, and outcome-only GRPO with generic or
 task-specific sub-agent variants at several GRPO group sizes (`4gen` / `6gen` /
-`8gen` = `--mgr_num_generations`). Only aggregate accuracies were kept.
+`8gen` = GRPO group size). Only aggregate accuracies were kept.
 Table 6 of the paper is the best variant per (task, size) minus the same-size
-base model; LegalBench was dropped from the paper.
+base model; LegalBench was dropped from the paper. The cold-start and GRPO
+code that produced these numbers is on the `legacy` branch (tag `v0.1-full`),
+not on the main branch.
 
 ```bash
 python scripts/summarize_main_results.py
@@ -22,9 +24,11 @@ python scripts/summarize_main_results.py
 ## `medqa_marginal_v1/` — paper Appendix D (Table 10, "MedQA, 8B manager")
 
 An earlier Qwen3-8B run of the interventional collection followed by an
-outcome-only GRPO continuation (terminal binary correctness, no call penalty).
-It documents the collapse to three calls per example; it is **not** the
-selective SFT policy reported in the main text.
+outcome-only GRPO continuation (terminal binary correctness, no call penalty),
+produced with the GRPO continuation code on the `legacy` branch (tag
+`v0.1-full`); the main branch no longer contains that trainer. It documents
+the collapse to three calls per example; it is **not** the selective SFT
+policy reported in the main text.
 
 | File | Produced by | Contents |
 |---|---|---|

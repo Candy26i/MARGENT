@@ -36,7 +36,6 @@ The code predates the paper's final vocabulary. The mapping below applies throug
 | learned delegate-or-commit policy evaluation | `eval_manager_tools` |
 | forced one Verifier call / force all three | `eval_manager_forced --eval_forced_tools verifier` / `extractor,reasoner,verifier` |
 | call gap (P(call \| candidate wrong) − P(call \| candidate correct)) | `draft_conditioned_call_gap` in the evaluation report |
-| outcome-only GRPO continuation (Appendix D diagnostic) | `train_manager_grpo` |
 
 ## Method in brief
 
@@ -63,29 +62,36 @@ input, so the Verifier's cache key includes the candidate it audits.
 
 ```
 src/
-  benchmarks/   MedQA, MMLU-Pro, GPQA (and LegalBench) loaders -> StandardRow
+  benchmarks/   MedQA, MMLU-Pro, GPQA and AQuA-RAT loaders -> StandardRow
   teachers/     OpenAI / Anthropic / DeepSeek clients for sub-agent data synthesis
   subagents/    sub-agent prompts, pydantic schemas, synthesis, LoRA SFT, runtime
-  manager/      prompt protocol, interventional collection + distillation
-                (marginal_value.py), GRPO, rewards, SFT-anchor helpers
-  pipeline/     cli.py (single entry point) and stages.py (stage implementations)
+  manager/      prompt protocol (prompt.py), interventional collection + distillation
+                data (marginal_value.py), manager SFT (sft.py), tool-call
+                normalisation and chat rendering (chat_template.py)
+  pipeline/     cli.py (single entry point); stage implementations in data.py,
+                subagent_stages.py, manager_stages.py and eval_stages.py;
+                context.py (output layout under outputs/<teacher_id>)
   utils/        jsonl I/O, caching, leakage audit, seeding
-scripts/        vLLM sub-agent server, multi-GPU GRPO launcher, GPQA split builder,
-                trace summariser, result analysis (stdlib only)
-configs/        accelerate / DeepSpeed configs for the GRPO diagnostic
-tests/          unit tests for the selection rule and SFT-anchor masking (no GPU)
+scripts/        vLLM sub-agent server, GPQA split builder, OpenAI batch
+                generation, result analysis (stdlib only)
+tests/          unit tests for the selection rule, chat rendering and the
+                AQuA-RAT loader (no GPU, no torch)
 docs/
-  EXPERIMENTS.md            step-by-step protocol with gates and ablations
-  history/ADC_EXPERIMENTS.md  archived reward-shaping plan (earlier pipeline)
-  figures/                  overview figure
+  EXPERIMENTS.md  step-by-step protocol with gates and ablations
+  figures/        overview figure
 results/        released records (see results/README.md)
 ```
+
+Everything that is not the paper's method (outcome-only GRPO, ADC/CCR
+rewards, the SFT anchor, the failure-recycling "evolve" loop, the cold-start
+stages, LegalBench, DeepSpeed configs) lives on the `legacy` branch, tag
+`v0.1-full`; see `CHANGELOG.md`.
 
 ## Installation
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt accelerate deepspeed
+pip install -r requirements.txt
 
 # separate environment for the vLLM sub-agent server
 conda create -n vllm_env python=3.11 -y && conda activate vllm_env && pip install vllm
@@ -95,10 +101,9 @@ export PYTHONUTF8=1
 ```
 
 GPU 0 serves the base model plus the three LoRA sub-agents through vLLM; the
-collector, SFT and evaluation run on another GPU. The paper's manager is
-Qwen3.5-9B with LoRA sub-agents on the same model family; the walkthrough
-below uses the Hugging Face id you have for that checkpoint (`Qwen3-8B` also
-runs unchanged).
+collector, SFT and evaluation run on another GPU. The paper's manager
+checkpoint is `Qwen/Qwen3.5-9B` with LoRA sub-agents on the same base model;
+the walkthrough below uses that id (`Qwen/Qwen3-8B` also runs unchanged).
 
 ## Data
 
@@ -111,7 +116,6 @@ benchmark into `outputs/data/*.jsonl`:
 | MMLU-Pro | `load_mmlu_pro` | `--mmlu_pro_splits test` |
 | GPQA | `load_gpqa`, `scripts/build_gpqa_splits.py` | gated: accept the terms on Hugging Face and `huggingface-cli login`; the split script holds out 100 Diamond questions, disjoint from the 446-question collection pool |
 | AQuA-RAT | `load_aqua_rat` | `--aqua_rat_splits test` (default): the 254-question test split used in the paper (n = 254); `deepmind/aqua_rat`, config `raw` |
-| LegalBench | loaded on first use via `--legalbench_configs` | present in the code, not used in the paper |
 
 ## Reproducing the pipeline (MedQA walkthrough)
 
@@ -120,7 +124,7 @@ namespaces all outputs under `outputs/`. `docs/EXPERIMENTS.md` has the
 complete protocol with go/no-go gates.
 
 ```bash
-export BASE_MODEL=Qwen/Qwen3-8B          # or the Qwen3.5-9B checkpoint id
+export BASE_MODEL=Qwen/Qwen3.5-9B        # the paper's manager checkpoint; Qwen/Qwen3-8B also works
 export TEACHER_ID=medqa_mv
 export PROVIDER=openai MODEL=gpt-4o
 export MEDQA_CACHE=outputs/data/medqa_us4_normalized.jsonl
@@ -203,42 +207,38 @@ its own `--mv_output_dir`, then repeat steps 6–7. Larger ρ lowers the call ra
 and usually raises the call gap; select ρ, depth and checkpoint on the
 development pool before the single locked evaluation.
 
-MMLU-Pro and GPQA use the same steps with their cache flags, a matching
-`--task_description`, and depth 2 (`docs/EXPERIMENTS.md` §12).
+MMLU-Pro, GPQA and AQuA-RAT use the same steps with their cache flags, a
+matching `--task_description`, and depth 2 (`docs/EXPERIMENTS.md` §9).
 
 ### Appendix diagnostic: outcome-only GRPO
 
-`scripts/train_manager_grpo_multigpu.sh` continues a selective SFT checkpoint
-with GRPO under a terminal binary reward and no call penalty
-(`--mgr_routing_efficiency_bonus 0 --mgr_tool_use_bonus 0`). In the paper's
-record this drifts to 2.98–3.00 calls per example, so it is a diagnostic, not
-part of the method. The `--mgr_sft_anchor_jsonl` / `--mgr_sft_anchor_coef` / `--mgr_sft_anchor_mode`
-flags replay the distillation data as an auxiliary loss during GRPO and are
-untested at scale.
+The GRPO continuation, the ADC/CCR rewards, the failure-recycling "evolve"
+loop, the cold-start stages and the DeepSpeed configs are on the `legacy`
+branch (tag `v0.1-full`) and are not maintained; the main branch contains
+only the method.
 
 ## Pipeline stages
 
 | Stage | Purpose |
 |---|---|
-| `load_medqa` / `load_gpqa` / `load_mmlu_pro` / `load_aqua_rat` | download and normalise benchmarks |
+| `load_medqa` / `load_mmlu_pro` / `load_gpqa` / `load_aqua_rat` | download and normalise benchmarks |
 | `synth_subagent` | teacher synthesis of sub-agent SFT data with quality gates |
 | `export_deepseek_jsonl` / `import_deepseek_jsonl` | offline-teacher alternative to `synth_subagent` |
 | `train_subagent` | LoRA-SFT one sub-agent |
 | `eval_subagents` | JSON / schema validity gate for sub-agents |
 | `build_marginal_sft` | same-state interventional collection and shortest-success selection |
 | `train_manager_sft` | manager distillation (or continuation from a checkpoint with `--manager_sft_init_adapter`) |
+| `eval_manager` | no-sub-agent answering; `--eval_sc_k K` gives a self-consistency baseline |
 | `eval_manager_tools` | the learned delegate-or-commit policy |
 | `eval_manager_forced` | fixed delegation sequences: always-Verifier, force-all, any subset |
-| `eval_manager` | no-sub-agent answering; `--eval_sc_k K` gives a self-consistency baseline |
-| `train_manager_grpo` | outcome-only GRPO continuation (diagnostic) |
-| `manager_coldstart_sft`, `evolve_build_sft` / `evolve_round` | earlier cold-start and failure-recycling baselines |
 
 ## Released results
 
 `results/README.md` describes the two record sets in this snapshot: the
-predecessor scaling diagnostic (paper Appendix B) and the 8B outcome-only GRPO
-continuation with its interventional collection (paper Appendix D). Both can
-be summarised without a GPU:
+predecessor scaling diagnostic (paper Appendix B) and an 8B outcome-only GRPO
+continuation with its interventional collection (paper Appendix D; produced
+with the GRPO code that now lives on the `legacy` branch). Both can be
+summarised without a GPU:
 
 ```bash
 python scripts/summarize_main_results.py                     # Appendix B table
