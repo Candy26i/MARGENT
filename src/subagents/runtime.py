@@ -1,21 +1,21 @@
 """FrozenAgent: load a SFT'd subagent and run it as a non-trainable tool.
 
 Used at:
-  - manager GRPO training time (subagents are tools called from manager rollouts)
-  - manager evaluation time
-  - manager evolve_round (to produce tool outputs for SFT trace construction)
+  - marginal-value collection (build_marginal_sft: forced advisor branches)
+  - manager evaluation time (eval_manager_tools / eval_manager_forced)
 
 Key behaviors:
   - Loads base model + LoRA adapter (PEFT). If adapter_path points to a full
     save_pretrained dir (no adapter_config.json), loads as a full model.
-  - Greedy decoding by default (deterministic tool outputs, important for
-    GRPO group-relative advantage computation).
+  - Greedy decoding by default (deterministic tool outputs, so paired
+    counterfactual branches differ only in the routing decision).
   - Caches outputs by (agent_kind, example_id) so repeated calls on the same
-    example during multi-rollout GRPO are free.
+    example across branches are free.
 
-For multi-GPU full-parameter GRPO, use RemoteSubagentPool instead of SubagentPool.
-RemoteSubagentPool calls subagents via a vLLM HTTP server running on a dedicated GPU,
-so no subagent weights are loaded into the training processes.
+When the manager and the subagents must not share a GPU, use RemoteSubagentPool
+instead of SubagentPool. RemoteSubagentPool calls subagents via a vLLM HTTP
+server running on a dedicated GPU, so no subagent weights are loaded into the
+calling process.
 """
 from __future__ import annotations
 
@@ -146,9 +146,9 @@ class FrozenSubagent:
 class SubagentPool:
     """Holds up to three FrozenSubagent instances and routes calls by kind.
 
-    Provides per-(kind, example_id) output caching: during GRPO with N rollouts
-    per example, the manager may call the same tool multiple times across
-    rollouts; we want the tool output to be deterministic and cheap.
+    Provides per-(kind, example_id) output caching: during counterfactual
+    collection several forced branches share one example, so the same tool is
+    called repeatedly; we want the tool output to be deterministic and cheap.
     """
 
     def __init__(self) -> None:
@@ -212,7 +212,8 @@ class SubagentPool:
 class RemoteSubagentPool:
     """Calls subagents via a vLLM HTTP server instead of loading models locally.
 
-    Drop-in replacement for SubagentPool for multi-GPU full-parameter GRPO.
+    Drop-in replacement for SubagentPool when the manager and the subagents
+    must not share a GPU.
     Subagents run on a dedicated GPU (GPU 0) via vLLM with --enable-lora;
     the adapter name is used as the model identifier in the OpenAI-compatible API.
 

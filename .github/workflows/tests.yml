@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      # The selection-rule and SFT-anchor tests are pure Python; no model weights or GPU needed.
+      # The unit tests are pure Python; no model weights, datasets or GPU needed.
       - name: Run unit tests
-        run: python -m unittest tests.test_marginal_value tests.test_routing_anchor -v
+        run: python -m unittest discover -s tests -t . -v
       - name: Check that every Python file parses
         run: python -c "import ast, glob; [ast.parse(open(f).read(), f) for f in glob.glob('**/*.py', recursive=True)]; print('ok')"
       - name: Summarise released results (stdlib only)

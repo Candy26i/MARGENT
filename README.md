@@ -251,7 +251,7 @@ dashboard and are not part of this snapshot.
 ## Tests
 
 ```bash
-python -m unittest tests.test_marginal_value tests.test_routing_anchor
+python -m unittest discover -s tests -t . -v
 ```
 
 ## Citation

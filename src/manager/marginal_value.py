@@ -13,9 +13,9 @@ lexicographic supervision we actually want:
   2. among correct trajectories, prefer the one with fewer advisor calls;
   3. when neither branch is correct, do not teach a spurious no-call action.
 
-GRPO can subsequently keep its plain binary terminal reward.  The otherwise
-unidentifiable efficiency tie-break is learned here from paired
-counterfactuals rather than from a global per-call penalty.
+The efficiency tie-break, which an outcome-only reward cannot identify, is
+learned here from paired counterfactuals rather than from a global per-call
+penalty.
 """
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
     from ..benchmarks.base import StandardRow
+from .chat_template import render_chat
 from .prompt import (
     build_manager_system_prompt,
     build_manager_user_message,
@@ -175,41 +176,6 @@ def _tool_call_message(
     }
 
 
-def _normalize_tool_calls_mv(messages):
-    """Qwen3.5's chat template iterates tool_call.arguments with |items, so the
-    arguments must be a mapping. Convert on a deep copy."""
-    import json as _json, copy
-    out = copy.deepcopy(messages)
-    for m in out:
-        for tc in (m.get("tool_calls") or []):
-            fn_ = tc.get("function") if isinstance(tc.get("function"), dict) else tc
-            a = fn_.get("arguments")
-            if isinstance(a, str):
-                try:
-                    fn_["arguments"] = _json.loads(a)
-                except Exception:
-                    fn_["arguments"] = {}
-            if not isinstance(fn_.get("arguments"), dict):
-                fn_["arguments"] = {}
-            if fn_ is not tc:
-                tc.setdefault("name", fn_.get("name"))
-                tc["arguments"] = fn_["arguments"]
-    return out
-
-
-def _render_chat(tokenizer: Any, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> str:
-    messages = _normalize_tool_calls_mv(messages)
-    kwargs = dict(
-        tools=tools,
-        tokenize=False,
-        add_generation_prompt=True,
-    )
-    try:
-        return tokenizer.apply_chat_template(messages, enable_thinking=False, **kwargs)
-    except TypeError:
-        return tokenizer.apply_chat_template(messages, **kwargs)
-
-
 def _load_manager(cfg: MarginalValueConfig, device: str, dtype: Any):
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -275,7 +241,7 @@ def _generate_answer(
     import torch
 
     probe_messages = list(messages) + [{"role": "user", "content": probe}]
-    prompt = _render_chat(tokenizer, probe_messages, tools)
+    prompt = render_chat(tokenizer, probe_messages, add_generation_prompt=True, tools=tools)
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
     do_sample = temperature > 1e-6
     with torch.no_grad():

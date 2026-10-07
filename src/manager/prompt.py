@@ -15,7 +15,7 @@ Draft-conditioned routing policy:
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 def _label_to_token(label: str) -> str:
@@ -156,47 +156,3 @@ def parse_draft_answer(text: str, choice_keys: List[str]) -> Optional[str]:
         if _label_to_token(k) == token:
             return k
     return None
-
-
-def extract_answer_sequence(
-    completion: Any,
-    choice_keys: List[str],
-) -> List[Optional[str]]:
-    """Extract the full sequence of candidate answers from a completion.
-
-    Scans every assistant turn for DRAFT_ANSWER_ and the final ANSWER_.
-    Returns list of (draft_0, draft_1, ..., final) in chronological order.
-    Used by the ADC reward function.
-    """
-    if not isinstance(completion, list):
-        text = str(completion) if completion else ""
-        result = []
-        draft = parse_draft_answer(text, choice_keys)
-        if draft is not None:
-            result.append(draft)
-        final = parse_final_answer(text, choice_keys)
-        if final is not None:
-            result.append(final)
-        return result
-
-    sequence: List[Optional[str]] = []
-    for msg in completion:
-        if not isinstance(msg, dict) or msg.get("role") != "assistant":
-            continue
-        content = msg.get("content")
-        if isinstance(content, list):
-            text = " ".join(
-                blk.get("text", "") for blk in content
-                if isinstance(blk, dict) and "text" in blk
-            )
-        else:
-            text = str(content or "")
-        if not text.strip():
-            continue
-        draft = parse_draft_answer(text, choice_keys)
-        if draft is not None:
-            sequence.append(draft)
-        final = parse_final_answer(text, choice_keys)
-        if final is not None:
-            sequence.append(final)
-    return sequence
