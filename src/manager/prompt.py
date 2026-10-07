@@ -109,60 +109,60 @@ def build_manager_user_message(
     return "\n".join(lines)
 
 
-def manager_tool_schemas(binding_mode: str) -> List[Dict[str, Any]]:
-    """Native tool-calling schemas for the three tools, shared by
-    build_marginal_sft, train_manager_sft and the eval stages so the manager is
-    evaluated with the tool JSON it was trained on. ``argument`` binding adds a
-    required ``example_id``; the verifier always takes ``current_draft``."""
+# Tool descriptions. "training" is the wording rendered by build_marginal_sft and
+# train_manager_sft; "evaluation" is the longer wording the eval stages used in the
+# released runs. Both are kept so evaluations stay comparable with the paper.
+_TOOL_DESCRIPTIONS: Dict[str, Dict[str, str]] = {
+    "training": {
+        "example_id": "The current example ID.",
+        "current_draft": "The current draft answer key.",
+        "extractor": "Extract decision-relevant factual signals.",
+        "reasoner": "Produce a structured reasoning scaffold.",
+        "verifier": "Audit the current draft for errors.",
+    },
+    "evaluation": {
+        "example_id": "The current example ID from the user message.",
+        "current_draft": 'Your current draft answer key (e.g. "B") to audit.',
+        "extractor": "Extract decision-relevant factual signals from the question and context.",
+        "reasoner": "Produce a structured reasoning scaffold for the choices.",
+        "verifier": (
+            "Identify relevant domain principles and audit the reasoning for logical or "
+            "computational errors. Pass your current draft answer via current_draft."
+        ),
+    },
+}
+
+
+def manager_tool_schemas(binding_mode: str, descriptions: str = "training") -> List[Dict[str, Any]]:
+    """Native tool-calling schemas for the three tools.
+
+    ``binding_mode`` "argument" adds a required ``example_id``; the verifier
+    always takes ``current_draft``. ``descriptions`` selects the wording:
+    "training" for build_marginal_sft / train_manager_sft, "evaluation" for the
+    eval stages (see ``_TOOL_DESCRIPTIONS``).
+    """
+    text = _TOOL_DESCRIPTIONS[descriptions]
     required = ["example_id"] if binding_mode == "argument" else []
     properties: Dict[str, Any] = {}
     if binding_mode == "argument":
-        properties["example_id"] = {
-            "type": "integer",
-            "description": "The current example ID.",
-        }
+        properties["example_id"] = {"type": "integer", "description": text["example_id"]}
     verifier_properties = dict(properties)
-    verifier_properties["current_draft"] = {
-        "type": "string",
-        "description": "The current draft answer key.",
-    }
+    verifier_properties["current_draft"] = {"type": "string", "description": text["current_draft"]}
+
+    def tool(name: str, description: str, props: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": {"type": "object", "properties": props, "required": required},
+            },
+        }
+
     return [
-        {
-            "type": "function",
-            "function": {
-                "name": "extractor_tool",
-                "description": "Extract decision-relevant factual signals.",
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "reasoner_tool",
-                "description": "Produce a structured reasoning scaffold.",
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "verifier_tool",
-                "description": "Audit the current draft for errors.",
-                "parameters": {
-                    "type": "object",
-                    "properties": verifier_properties,
-                    "required": required,
-                },
-            },
-        },
+        tool("extractor_tool", text["extractor"], properties),
+        tool("reasoner_tool", text["reasoner"], properties),
+        tool("verifier_tool", text["verifier"], verifier_properties),
     ]
 
 

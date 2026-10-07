@@ -218,7 +218,7 @@ def run_eval_manager_tools(
 ) -> Dict[str, Any]:
     """Evaluate the manager with the same frozen subagents used as tools."""
     import torch
-    from ..subagents.runtime import build_subagent_pool
+    from ..subagents.runtime import RemoteSubagentPool, build_subagent_pool
 
     if manager_dir is None:
         manager_dir = ctx.manager_sft_dir()
@@ -235,7 +235,7 @@ def run_eval_manager_tools(
     )
 
     tok, model = load_manager(ctx.base_model, manager_dir, device, dtype)
-    tools = manager_tool_schemas(binding_mode)
+    tools = manager_tool_schemas(binding_mode, descriptions="evaluation")
 
     sample = list(rows)
     random.Random(ctx.seed).shuffle(sample)
@@ -439,7 +439,7 @@ def run_eval_manager_tools(
         "correction_rate": sum(r["corrected_by_tools"] for r in rows_log) / max(1, n),
         "corruption_rate": sum(r["corrupted_by_tools"] for r in rows_log) / max(1, n),
         "binding_mode": binding_mode,
-        "subagents": [k for k in SUBAGENT_KINDS if pool.has(k)],
+        "subagents": ["remote"] if isinstance(pool, RemoteSubagentPool) else [k for k in SUBAGENT_KINDS if pool.has(k)],
     }
     write_jsonl(os.path.join(ctx.eval_root, "manager_tool_eval.jsonl"), rows_log)
     write_json(os.path.join(ctx.eval_root, "manager_tool_eval_report.json"), report)
@@ -506,7 +506,7 @@ def run_eval_manager_forced(
             )
 
     tok, model = load_manager(ctx.base_model, manager_dir, device, dtype)
-    tools = manager_tool_schemas(binding_mode)
+    tools = manager_tool_schemas(binding_mode, descriptions="evaluation")
 
     sample = list(rows)
     random.Random(ctx.seed).shuffle(sample)

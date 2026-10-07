@@ -371,16 +371,24 @@ def _load_benchmark_splits(args) -> dict:
     --train_size / --dev_size / --test_size. AQuA-RAT keeps its own
     train/validation/test labels (validation -> dev).
     """
-    for stage, using, load, tag in _BENCHMARKS:
-        if args.stage == stage or using(args):
-            rows = load(args)
-            train, dev, test = _split_rows(
-                rows=rows, train_size=args.train_size, dev_size=args.dev_size,
-                test_size=args.test_size, seed=args.seed,
-            )
-            print(f"[SPLIT/{tag}] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
-            return {"all": rows, "train": train, "dev": dev, "test": test}
+    def split(rows, tag):
+        train, dev, test = _split_rows(
+            rows=rows, train_size=args.train_size, dev_size=args.dev_size,
+            test_size=args.test_size, seed=args.seed,
+        )
+        print(f"[SPLIT/{tag}] train/dev/test = {len(train)}/{len(dev)}/{len(test)}")
+        return {"all": rows, "train": train, "dev": dev, "test": test}
 
+    # A load_* stage always loads the benchmark it names, whatever other cache
+    # flags are set; the flag-based rule below is for the training/eval stages.
+    if args.stage == "load_medqa":
+        return _load_medqa_splits(args)
+    for stage, using, load, tag in _BENCHMARKS:
+        if args.stage == stage:
+            return split(load(args), tag)
+    for stage, using, load, tag in _BENCHMARKS:
+        if using(args):
+            return split(load(args), tag)
     return _load_medqa_splits(args)
 
 

@@ -24,6 +24,9 @@ def load_manager(base_model: str, source: str, device: str, dtype: Any) -> Tuple
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    if source.startswith(("./", "../", "/", "~", "outputs/")) and not os.path.isdir(os.path.expanduser(source)):
+        raise FileNotFoundError(f"manager checkpoint directory not found: {source}")
+
     tok = AutoTokenizer.from_pretrained(source, trust_remote_code=True)
     if tok.pad_token_id is None and tok.eos_token_id is not None:
         tok.pad_token_id = tok.eos_token_id

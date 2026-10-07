@@ -58,10 +58,13 @@ Changed defaults:
   used to write that file, so nothing on v0.2 did), and the eval stages read it
   back, falling back to environment instead of argument when the file is
   absent (e.g. for the untrained base model).
-- The eval stages render the tool schemas the manager was trained on
-  (`manager_tool_schemas` in `src/manager/prompt.py`, the former
-  `marginal_value._tool_schemas` text); the eval-only copy with different
-  descriptions is gone.
+- One tool-schema builder, `manager_tool_schemas` in `src/manager/prompt.py`,
+  with the two wordings the pipeline always used: `descriptions="training"`
+  (collection and SFT) and `descriptions="evaluation"` (the eval stages, so
+  evaluations stay comparable with the released runs).
+- `load_<benchmark>` stages always load the benchmark they name, even when
+  another benchmark's cache flag is set; `load_manager` fails fast on a
+  mistyped local checkpoint path.
 - `--eval_manager_dir` accepts a Hugging Face model id or a full checkpoint
   directory in all three eval stages (`eval_manager_tools` /
   `eval_manager_forced` required a local directory and treated anything
