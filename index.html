@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MARGENT</title>
+<meta name="description" content="Project page for MARGENT: a trainable delegate-or-commit framework that measures the marginal value of each sub-agent call from the same manager state and distills the shortest successful branch into supervision. NeurIPS 2026 submission.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap">
+<link rel="stylesheet" href="static/css/style.css">
+<link rel="icon" href="data:,">
+<style>
+  /* page-specific: equation lines, evidence tags on table captions, the three-row example box */
+  .eq { font-family: var(--font-mono); font-size: 0.95rem; background: var(--box); border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.9rem; margin: 0.6rem 0 1rem; overflow-x: auto; }
+  .eq .eqno { float: right; color: var(--muted); font-family: var(--font-body); }
+  .tag { display: inline-block; padding: 0.1em 0.6em; border-radius: 9999px; font-size: 0.76rem; font-weight: 600; white-space: nowrap; background: var(--accent-soft); color: var(--accent); vertical-align: middle; margin-left: 0.3rem; }
+  caption .status, caption .tag { font-size: 0.72rem; }
+  .example td:first-child { white-space: nowrap; font-weight: 600; }
+  figure.narrow img { max-width: min(620px, 100%); }
+  figcaption code, .prose code, td code { overflow-wrap: anywhere; }
+  .rq { color: var(--muted); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; display: block; margin-bottom: 0.1rem; }
+</style>
+</head>
+<body>
+
+<!-- ===== top navigation ===== -->
+<nav class="topnav" aria-label="Site">
+  <div class="container">
+    <a class="brand" href="index.html">MARGENT</a>
+    <ul>
+      <li><a href="index.html" class="active">Project page</a></li>
+      <li><a href="report.html">实验报告 (Report)</a></li>
+      <li><a href="https://github.com/Candy26i/MARGENT">Code</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== floating table of contents ===== -->
+<aside class="toc" aria-label="Table of contents">
+  <h4>Contents</h4>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#problem">Delegate or commit</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#setup">Experimental setup</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#diagnostics">Appendix diagnostics</a></li>
+    <li><a href="#limitations">Limitations</a></li>
+    <li><a href="#resources">Code</a></li>
+    <li><a href="#bibtex">BibTeX</a></li>
+  </ul>
+</aside>
+
+<!-- ===== hero ===== -->
+<header class="hero">
+  <div class="container">
+    <h1 class="title">MARGENT</h1>
+    <p class="subtitle">Measuring the Marginal Value of Delegation in Agentic Systems</p>
+    <p class="authors"><span class="todo">Author names</span></p>
+    <p class="authors affil"><span class="todo">Affiliations</span></p>
+    <p class="authors venue">Submitted to NeurIPS 2026</p>
+    <p class="note">Anonymous submission. Project page draft.</p>
+    <div class="links">
+      <a class="btn is-disabled" aria-disabled="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6zm7 1.5V9h5.5zM8 12h8v1.5H8zm0 3h8v1.5H8zm0 3h5v1.5H8z"/></svg>
+        <span>Paper (coming)</span>
+      </a>
+      <a class="btn" href="https://github.com/Candy26i/MARGENT">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        <span>Code</span>
+      </a>
+      <a class="btn" href="report.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16v1.5H4zM5 10h3v8H5zm5.5-6h3v14h-3zM16 13h3v5h-3z"/></svg>
+        <span>Experiment report (中文)</span>
+      </a>
+      <a class="btn is-light" href="static/data/paper_tables.json">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v3H3zm0 5h18v3H3zm0 5h18v3H3zm0 5h12v2H3z"/></svg>
+        <span>Results data (JSON)</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ===== 1. Overview ===== -->
+<section class="section" id="overview">
+  <div class="container">
+    <h2>Overview</h2>
+    <div class="prose">
+      <p class="lead">Agentic systems add sub-agents to improve answers. Each extra call costs computation and opens a new failure path: it can leave the answer unchanged or turn a correct answer into a wrong one. Existing selective methods decide from query features, team structure or model confidence. None of these compares committing against delegating from the same reasoning state. The paper asks a simple question: when is additional intelligence worth it?</p>
+      <p>MARGENT studies this in a concrete setting. A trainable manager writes the candidate solution it would submit now. It then commits or delegates to one of three frozen sub-agents (Extractor, Reasoner, Verifier), revises the candidate from the returned signal, and decides again. During data collection, MARGENT branches from the same manager-generated state into immediate commitment and every available delegation. It scores the terminal branches with the gold answer and reads off the marginal value of each call: rescue, no change, or corruption. It then distills the shortest successful branch into supervised trajectories and fine-tunes only the manager.</p>
+      <p>Across four reasoning benchmarks, the best single delegation recovers 91.7% of the accuracy gain available under the measured oracle. On four collection-disjoint evaluation sets (sets that share no examples with the interventional collections), the learned manager's final answer beats its own pre-delegation candidate by 17.1 points at 0.53 sub-agent calls per example. On development diagnostics (results on the pools used to select operating points), roughly one selected call matches forcing all three sub-agents on MMLU-Pro (71.5%) and beats it on AQuA-RAT (81.1% vs 75.2%).</p>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="kpi">91.7%</div><div class="kpi-label">Gain@1, macro mean (Table 1)</div><p>Share of the measured oracle gain that the best single call recovers.</p></div>
+      <div class="card"><div class="kpi">+17.1 pp</div><div class="kpi-label">at 0.53 calls per example (Table 3)</div><p>Final answer vs the same manager's candidate on four collection-disjoint sets.</p></div>
+      <div class="card"><div class="kpi">71.5%</div><div class="kpi-label">MMLU-Pro: 1.07 selected calls match 3 forced calls (Table 5)</div><p>Development diagnostic. Same 71.5% accuracy as forcing all three sub-agents, at about a third of the calls.</p></div>
+      <div class="card"><div class="kpi">81.1 vs 75.2</div><div class="kpi-label">AQuA-RAT, selected vs force-all (Table 5)</div><p>Development diagnostic. Three forced calls lose 5.9 points to one selected call.</p></div>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/margent_overview.png" alt="Overview of MARGENT in two halves. Left: from one shared manager-generated state the collector forces commitment and every available delegation, scores each branch, and distills a shortest successful trajectory into manager SFT data. Right: at inference the learned manager commits or delegates to an unused frozen sub-agent, updates its candidate from the returned structured signal, and decides again." width="1800" height="1012">
+        <figcaption><b>Figure 1.</b> Overview of MARGENT. Left: from one shared manager-generated state, the collector evaluates commitment and every available delegation, then distills a shortest measured successful trajectory into manager SFT data. Right: the inference loop. The trained manager either commits or calls one sub-agent it has not used yet, folds the returned structured signal into a revised candidate, and faces the same choice again.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 2. Delegate-or-commit interface ===== -->
+<section class="section" id="problem">
+  <div class="container">
+    <h2>The delegate-or-commit interface</h2>
+    <div class="prose">
+      <p>For a question <i>x</i>, the state at turn <i>t</i> is <i>s<sub>t</sub></i> = (<i>x</i>, <i>h<sub>t</sub></i>, <i>ŷ<sub>t</sub></i>, <i>U<sub>t</sub></i>): the question, the interaction history, the manager's current candidate solution, and the set of sub-agents already used. The manager policy <i>π<sub>θ</sub></i> picks one action from</p>
+      <div class="eq"><span class="eqno">(1)</span>u<sub>t</sub> ∈ U(s<sub>t</sub>) = {commit} ∪ {delegate(a) : a ∈ A \ U<sub>t</sub>}</div>
+      <p>A commit ends the trajectory and submits <i>ŷ<sub>t</sub></i>. A delegation appends the chosen sub-agent's output to the history; the manager then revises its candidate and chooses again. The interface allows any finite pool. The experiments use three sub-agents.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>The three sub-agents in the experimental pool. All are frozen, greedy-decoded, and return structured decision signals rather than an answer.</caption>
+        <thead><tr><th>Sub-agent</th><th>What it returns</th><th>What it receives</th></tr></thead>
+        <tbody>
+          <tr><td>Extractor</td><td>Decision-relevant facts and their polarity</td><td>Question and context</td></tr>
+          <tr><td>Reasoner</td><td>A decomposition of the problem and the missing reasoning steps</td><td>Question and context</td></tr>
+          <tr><td>Verifier</td><td>An audit of the current candidate solution</td><td>Question, context, and the manager's current candidate</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h4>Invariants</h4>
+      <ul>
+        <li>Sub-agents are frozen. Only the manager is trained.</li>
+        <li>Sub-agents emit structured signals, never a choice label or final answer.</li>
+        <li>Each sub-agent can be called at most once, so a trajectory has at most three delegations.</li>
+        <li>The manager owns both candidate revision and the final commitment.</li>
+        <li>The Verifier receives the candidate as input, so its cache key includes the candidate it audits. Cache keys for every sub-agent cover the complete input.</li>
+        <li>Teacher-synthesized sub-agent training data pass schema validation and explicit answer-leakage checks.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 3. Method ===== -->
+<section class="section" id="method">
+  <div class="container">
+    <h2>MARGENT</h2>
+    <div class="prose">
+      <p>MARGENT has two stages. First it measures, from one manager-generated state, whether each delegation changes the correctness of the current candidate. Second it turns the shortest measured successful trajectory into supervision for a delegate-or-commit policy. Measuring whether more intelligence helps is kept separate from learning when to use it.</p>
+      <h3>(a) Interventional marginal-value measurement</h3>
+      <p>Let <i>C</i>(<i>s<sub>t</sub></i>, commit) ∈ {0, 1} say whether committing the current candidate is correct. A one-step probe forces the manager to delegate to sub-agent <i>a</i>, shows it the response, and then forces a revise-and-commit without further delegation. The marginal value of that call is</p>
+      <div class="eq"><span class="eqno">(2)</span>Δ(s<sub>t</sub>, a) = C(s<sub>t</sub>, delegate(a)) − C(s<sub>t</sub>, commit) ∈ {−1, 0, +1}</div>
+      <p>+1 is a rescue, 0 means no change in correctness, and −1 is a corruption. The value belongs to a state and a sub-agent together, not to the query or the sub-agent alone. It measures the whole delegation operation under the fixed revision protocol (call, revise, commit) and is not an intrinsic capability score for the sub-agent.</p>
+      <p>Collection works as follows.</p>
+      <ol>
+        <li>A temperature-zero manager produces the root candidate without delegation.</li>
+        <li>From that shared root, the collector forces direct commitment and delegation to each sub-agent.</li>
+        <li>Search is breadth-first over ordered sequences of distinct sub-agents up to a maximum depth <i>D</i> ≤ 3.</li>
+        <li>For a wrong root, every sequence at the current depth is evaluated and search stops after the first depth that contains a success, so all equally short successes are kept. If nothing succeeds, search continues to depth <i>D</i>.</li>
+        <li>For a correct root, only one-step delegations are evaluated; those branches are kept for corruption analysis.</li>
+        <li>With three non-repeating sub-agents, the full ordered space has 16 sequences including direct commitment. The stopping rule does not require all 16 to be evaluated for every question; it evaluates only the layers needed to find the shortest successful depth.</li>
+        <li>The gold answer only scores terminal branches and is never shown to the manager or the sub-agents.</li>
+      </ol>
+      <p>Because root states come from the manager and descendant states come from forced interventions, the alternatives are compared from the same state, including actions the current policy would not choose on its own. This avoids estimating a sub-agent's value only on the examples the policy already delegates. Note that Eq. 2 is a one-step quantity: a first action with Δ = 0 under immediate commitment can still start a successful two-step continuation. Such an action is selected by the sequence rule below, not by its one-step Δ.</p>
+      <h3>(b) Marginal-value distillation</h3>
+      <p>For each collected root state, let Σ(<i>s</i>) hold the evaluated sequences, including the empty sequence ε (commit now), and let <i>c<sub>σ</sub></i> ∈ {0, 1} be the final correctness of sequence σ. Equation 3 defines the set of shortest successful sequences Σ*(<i>s</i>). If the root is already correct, Σ*(<i>s</i>) = {ε}. If the root is wrong and at least one sequence succeeds, Σ*(<i>s</i>) is the set of all shortest successful sequences. Otherwise it is empty. Equation 4 then samples one trajectory uniformly from Σ*(<i>s</i>) with a fixed example-specific seed.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="example">
+        <caption>The three cases of the selection rule (Eq. 3 and 4).</caption>
+        <thead><tr><th>Root candidate</th><th>Measured branches</th><th>Supervision target</th></tr></thead>
+        <tbody>
+          <tr><td>Correct</td><td>One-step branches only, kept for corruption analysis</td><td>Commit immediately (ε)</td></tr>
+          <tr><td>Wrong, rescued at depth 1</td><td>Search stops after depth 1; all one-call successes are kept</td><td>One call, then commit; one of the equally short successes, sampled with the example seed</td></tr>
+          <tr><td>Wrong, no success to depth <i>D</i></td><td>Neither a working delegation target nor a correct final answer was observed</td><td>No label. The state is dropped rather than taught to commit</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Each selected trajectory yields a supervised decision at every visited state plus a final commit target. To keep directly correct examples from dominating the training set, commit trajectories are capped at ρ times the number of rescue trajectories. ρ is a data-construction hyperparameter and is swept in the experiments. SFT updates the full manager, not only a routing decision, so training can change which action is chosen and how the candidate is revised after a call. Any gain from candidate to final answer is therefore an end-to-end effect, not a pure routing effect. Collection happens once, before SFT; branches are not regenerated with the updated manager.</p>
+    </div>
+    <div class="callout">
+      <span class="label">Why not a per-call penalty</span>
+      <p>The rule imposes a lexicographic preference over measured successful trajectories: correctness first, then fewer delegations. A scalarized call penalty needs a numeric exchange rate between accuracy and calls, and that rate is task-dependent. The trajectory target needs none. ρ still controls how much direct-commit supervision is retained.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 4. Setup ===== -->
+<section class="section" id="setup">
+  <div class="container">
+    <h2>Experimental setup</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>Setup as reported in Section 4.1 and Appendix A of the paper.</caption>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Benchmarks</td><td>MedQA, MMLU-Pro, GPQA, AQuA-RAT (multiple-choice; medical, broad knowledge, scientific, mathematical)</td></tr>
+          <tr><td>Interventional collections</td><td>400 root states per task; GPQA 200</td></tr>
+          <tr><td>Development pools</td><td>MedQA 200, MMLU-Pro 200, AQuA-RAT 254, GPQA 100</td></tr>
+          <tr><td>Locked evaluations</td><td>One run each after fixing depth, ρ and checkpoint: MedQA n = 500, MMLU-Pro n = 500, AQuA-RAT n = 254. GPQA-Diamond-100 is disjoint from the 446-example GPQA collection pool and also serves as GPQA's development pool; the GPQA interventional collection itself has 200 root states (Table 1)</td></tr>
+          <tr><td>Manager</td><td>Qwen3.5-9B</td></tr>
+          <tr><td>Sub-agents</td><td>Three frozen role-specific LoRA sub-agents on the same model family</td></tr>
+          <tr><td>Decoding</td><td>Greedy for interventional probes and sub-agent calls</td></tr>
+          <tr><td>Search depth</td><td>3 for MedQA and AQuA-RAT; 2 for the primary MMLU-Pro and GPQA collections</td></tr>
+          <tr><td>ρ sweep</td><td>{0, 0.5, 1, 2, 3} over the recorded values. ρ = 0 keeps only rescue states; those policies delegate on nearly every question</td></tr>
+          <tr><td>Locked checkpoints</td><td>MedQA <code>sft_3.0_s1</code> (the seed closest to the mean of the replicated configuration, not the best seed), AQuA-RAT <code>sft_1.0</code>, MMLU-Pro <code>sft_2.0</code>, GPQA <code>sft_2.0</code></td></tr>
+          <tr><td>Comparisons</td><td>(i) the policy's own candidate before any delegation; (ii) one forced Verifier call; (iii) all three sub-agents forced in the recorded scaffold order; (iv) the measured oracle, best evaluated sequence per example</td></tr>
+          <tr><td>Metrics</td><td>Exact-match accuracy; mean sub-agent calls per example; rescue/correction and corruption probabilities from paired outcomes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p class="small">The exported experiment record holds no optimizer, hardware, token or latency metadata. Resource claims on this page are therefore stated only in sub-agent calls.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 5. Results ===== -->
+<section class="section" id="results">
+  <div class="container">
+    <h2>Results</h2>
+    <div class="prose">
+      <p>Two kinds of evaluation appear below. A development pool is the per-task set (MedQA 200, MMLU-Pro 200, AQuA-RAT 254, GPQA 100) on which operating points were selected; results on it are development diagnostics. A locked evaluation is one run on a separate set after depth, ρ and checkpoint were fixed. Tables 1 and 2 are measured on the interventional collections. Table 3 is the collection-disjoint evaluation; its MedQA, MMLU-Pro and AQuA-RAT rows are locked runs, while the GPQA row is collection-disjoint but also served as GPQA's development pool. Tables 4, 5, 7, 8 and 9 are development diagnostics and are labelled as such. All values are transcribed in <a href="static/data/paper_tables.json">paper_tables.json</a>.</p>
+
+      <h3><span class="rq">5a</span>How much value is available after one delegation?</h3>
+      <p>Most of the recoverable value is concentrated in the first delegation, provided it is chosen well. A single call captures over 90% of the measured gain on three tasks and 91.7% in the macro mean. A second call adds between 0.5 and 4.5 points. The third call adds exactly zero on the two collections searched to depth three. So on three tasks the first call is effectively the whole budget. GPQA is the exception: its second call adds 4.5 points, and its commit accuracy is the closest to chance, so a second opinion still has more to add there. Choosing the first call well is therefore the dominant decision in this pool.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_oracle_depth.svg" alt="Grouped bar chart with four task groups (MedQA, AQuA-RAT, MMLU-Pro, GPQA) and three bars each: commit accuracy A0, best one-call accuracy A1, and best measured accuracy A_D. Bars are labelled with their values and each group shows its Gain@1 percentage; n is printed under each task name.">
+        <figcaption><b>Figure 2.</b> Measured oracle accuracy by maximum delegation depth (Table 1). Commit A<sub>0</sub>, best single call A<sub>1</sub>, best measured sequence A<sub>D</sub>. Gain@1 = (A<sub>1</sub> − A<sub>0</sub>)/(A<sub>D</sub> − A<sub>0</sub>). The A<sub>1</sub> bar is close to the A<sub>D</sub> bar on MedQA, AQuA-RAT and MMLU-Pro; on GPQA the second call still adds 4.5 points.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 1. Measured oracle accuracy by maximum delegation depth. Each row comes from one shared collection, so depth comparisons do not mix runs. <span class="tag">interventional collection, not a held-out evaluation</span></caption>
+        <thead><tr><th>Task</th><th class="num">n</th><th class="num">Commit A<sub>0</sub></th><th class="num">Best 1 call A<sub>1</sub></th><th class="num">Best measured A<sub>D</sub></th><th class="num">Gain@1</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">400</td><td class="num">76.00</td><td class="num">91.75</td><td class="num">92.25</td><td class="num">96.9%</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">400</td><td class="num">54.25</td><td class="num">85.75</td><td class="num">87.25</td><td class="num">95.5%</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">400</td><td class="num">53.25</td><td class="num">71.75</td><td class="num">73.50</td><td class="num">91.4%</td></tr>
+          <tr><td>GPQA</td><td class="num">200</td><td class="num">43.00</td><td class="num">65.00</td><td class="num">69.50</td><td class="num">83.0%</td></tr>
+          <tr class="hl"><td><b>Macro mean</b></td><td class="num">–</td><td class="num">56.63</td><td class="num">78.56</td><td class="num">80.63</td><td class="num"><b>91.7%</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p class="small">The oracle rows use the deepest primary collection per task (depth 3 for MedQA and AQuA-RAT, depth 2 for MMLU-Pro and GPQA). "Best measured" is an upper bound within the enumerated sequences, not over arbitrary prompts or models. No measured sequence rescues 31/400 MedQA, 51/400 AQuA-RAT, 106/400 MMLU-Pro and 61/200 GPQA roots; these roots produce no routing label.</p>
+
+      <h3><span class="rq">5b</span>The value of a call depends on which sub-agent is called</h3>
+      <p>The Verifier has the largest mean value on all four tasks, but the value of a call varies widely with role and task. The paper measures this with the mean one-step marginal value 100·Δ̄<sub>a</sub> from the forced one-step branches, which separates sub-agent choice from generic extra computation (the oracle picks a sub-agent after seeing branch outcomes). The same Reasoner is worth +6.8 points on MedQA and −4.3 on AQuA-RAT. The Extractor is near zero or negative everywhere. The Verifier is still not interchangeable with the other roles: 12 MedQA and 9 MMLU-Pro questions are rescued by the Reasoner and not by the Verifier, and forcing the strongest role on every question still spends calls on already-correct candidates.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_net_marginal_value.svg" alt="Matrix of four tasks by three sub-agents showing the net marginal value of one forced call in percentage points around a zero line. Verifier values are positive and largest on every task; Extractor values are near zero or negative; Reasoner is positive on MedQA, MMLU-Pro and GPQA and negative on AQuA-RAT.">
+        <figcaption><b>Figure 3.</b> Net marginal value of one forced call, 100·Δ̄<sub>a</sub> in percentage points (Table 2). Positive means more rescue than corruption mass. The Verifier column dominates; the Extractor is near zero or negative on all four tasks.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 2. Net marginal value of one forced call, 100·Δ̄<sub>a</sub>, in percentage points. Positive cells have more rescue than corruption mass; negative cells have more corruption. <span class="tag">interventional collection, one-step branches</span></caption>
+        <thead><tr><th>Task</th><th class="num">Extractor</th><th class="num">Reasoner</th><th class="num">Verifier</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num pos">+2.0</td><td class="num pos">+6.8</td><td class="num pos">+10.0</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num neg">−0.5</td><td class="num pos">+2.3</td><td class="num pos">+15.1</td></tr>
+          <tr><td>GPQA</td><td class="num pos">+0.5</td><td class="num pos">+4.1</td><td class="num pos">+15.5</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num neg">−4.5</td><td class="num neg">−4.3</td><td class="num pos">+29.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>These averages show why task-level routing is not enough. "Always call the Verifier" is a good rule at the task level. It has no way to say "stop here" for a given state, and it misses the minority of candidates that only another role repairs. At the MMLU-Pro and GPQA operating points the paper calls shallow, the trained policy never picks the Extractor, whose value is near zero. The distilled labels thus recover part of the role ordering, and the policy sees no gold labels at inference time.</p>
+
+      <h3><span class="rq">5c</span>Learned delegation on collection-disjoint evaluations</h3>
+      <p>Table 3 compares two outputs of the same trained manager on each evaluation set: the candidate it would submit before any delegation, and MARGENT's final answer. The final answer is more accurate on all four tasks. The macro gain is 17.1 points at 0.53 calls per example. Checkpoints for MedQA, MMLU-Pro and AQuA-RAT were fixed before this single evaluation; GPQA-Diamond-100 is collection-disjoint but also served as its development (diagnostic) pool.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_disjoint_eval.svg" alt="Paired bars per task comparing the candidate accuracy with the MARGENT final accuracy on the collection-disjoint evaluation sets, with the gain labelled, and a second panel showing mean sub-agent calls per example: 0.460, 0.780, 0.352 and 0.510.">
+        <figcaption><b>Figure 4.</b> Collection-disjoint evaluation (Table 3). Left: candidate vs MARGENT accuracy per task with the gain in points. Right: mean sub-agent calls per example. The blue bar is higher on every task. AQuA-RAT has the largest gain (+39.4 points) and the most calls (0.780); MMLU-Pro gains 10.6 points with the fewest calls (0.352). The gain is end-to-end inside the same scaffold, not a comparison with a separately prompted single model.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 3. Evaluation on sets disjoint from the interventional collection. MedQA, MMLU-Pro and AQuA-RAT use checkpoints fixed before this single run. GPQA-Diamond-100 is collection-disjoint but also served as GPQA's development pool, so its row is a collection-disjoint evaluation rather than a locked one. "Candidate" is the answer the same manager would submit before its first delegation. <span class="status ok">locked evaluation (GPQA: collection-disjoint only)</span></caption>
+        <thead><tr><th>Task</th><th class="num">n</th><th class="num">Candidate</th><th class="num">MARGENT</th><th class="num">Gain (pp)</th><th class="num">Calls</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">500</td><td class="num">73.4</td><td class="num">79.8</td><td class="num pos">+6.4</td><td class="num">0.460</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">254</td><td class="num">37.4</td><td class="num">76.8</td><td class="num pos">+39.4</td><td class="num">0.780</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">500</td><td class="num">49.6</td><td class="num">60.2</td><td class="num pos">+10.6</td><td class="num">0.352</td></tr>
+          <tr><td>GPQA</td><td class="num">100</td><td class="num">42.0</td><td class="num">54.0</td><td class="num pos">+12.0</td><td class="num">0.510</td></tr>
+          <tr class="hl"><td><b>Macro mean</b></td><td class="num">–</td><td class="num">50.6</td><td class="num"><b>67.7</b></td><td class="num pos"><b>+17.1</b></td><td class="num">0.526</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <span class="label">Caveat: end-to-end, not routing-only</span>
+      <p>SFT updates the full manager, so Table 3 is an end-to-end difference inside the same scaffold, not a routing-only causal effect. The gain column is not a comparison against a separately prompted single model. The distinction matters most on AQuA-RAT: the candidate produced inside the tool-enabled scaffold is much weaker than what a plain-answer prompt would give.</p>
+    </div>
+    <div class="prose">
+      <h3><span class="rq">5d</span>Fewer calls at the same accuracy</h3>
+      <p>The paper reports MARGENT at four named sets of development operating points: low-call (Table 4), selected (Table 5), high-call (Table 8) and representative (Table 7). They are not all the same checkpoints; for example the GPQA high-call point (1.110 calls, Table 8) differs from the GPQA selected point (1.040 calls, Table 5). The paper does not list which checkpoint each set uses.</p>
+      <p>Against the strongest single role, MARGENT saves 43.5% of calls for about 1.6 accuracy points (Table 4). Because Table 2 names the Verifier the strongest average role, always calling it is a more informative baseline than no calls or all calls. On the four development pools, low-call MARGENT policies use 0.565 calls per example against the always-Verifier baseline's 1.00 and score 69.3% against its 70.8%. The paper gives the average accuracy cost as 1.6 points; the rounded macro row shows 69.3 vs 70.8.</p>
+      <p>At about one selected call, MARGENT matches forcing all three sub-agents (Table 5). The selected operating points average 73.2% at 1.03 calls; force-all averages 73.6% at 3.0 calls. That is a threefold cut in calls for a 0.4-point difference. The difference is concentrated on GPQA, where force-all stays 6.0 points better; on MedQA the gap is 1.5 points. MMLU-Pro is the cleanest case: 1.07 selected calls match three forced calls at 71.5%. AQuA-RAT shows that more calls can hurt: 1.03 selected calls reach 81.1%, force-all 75.2%.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_accuracy_vs_calls.svg" alt="Four small panels, one per task, plotting accuracy against mean calls per example from 0 to 3.2. Each panel shows the low-call MARGENT point, the always-Verifier point at one call, the selected MARGENT point near one call, and the force-all point at three calls. The selected MARGENT point is close to force-all on MedQA and MMLU-Pro, below it on GPQA, and above it on AQuA-RAT.">
+        <figcaption><b>Figure 5.</b> Accuracy against mean sub-agent calls on the development pools (Tables 4 and 5). Blue: MARGENT, the low-call policy (Table 4) joined to the selected operating point (Table 5). Orange diamond: one forced Verifier call. Violet square: all three sub-agents forced. Compare the right-hand blue point with the violet square: equal on MMLU-Pro (71.5 vs 71.5), 1.5 points lower on MedQA, 6.0 lower on GPQA, 5.9 higher on AQuA-RAT. Macro means 73.2% at 1.03 calls vs 73.6% at 3.0. Development diagnostic.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 4. Low-call MARGENT policies vs forcing one Verifier call on every example. MedQA reports the mean over three additional seeds (80.5 ± 1.0 accuracy, 0.517 ± 0.043 calls); the other rows are single runs. Calls saved = 1 − MARGENT calls / 1.0. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task</th><th class="num">MARGENT acc.</th><th class="num">MARGENT calls</th><th class="num">Always Verifier acc.</th><th class="num">Always Verifier calls</th><th class="num">Calls saved vs always Verifier (%)</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">80.5</td><td class="num">0.517</td><td class="num">84.5</td><td class="num">1.0</td><td class="num">48.3</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">64.5</td><td class="num">0.340</td><td class="num">67.0</td><td class="num">1.0</td><td class="num">66.0</td></tr>
+          <tr><td>GPQA</td><td class="num">54.0</td><td class="num">0.510</td><td class="num">55.0</td><td class="num">1.0</td><td class="num">49.0</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">78.0</td><td class="num">0.894</td><td class="num">76.8</td><td class="num">1.0</td><td class="num">10.6</td></tr>
+          <tr class="hl"><td><b>Macro mean</b></td><td class="num">69.3</td><td class="num"><b>0.565</b></td><td class="num">70.8</td><td class="num">1.0</td><td class="num"><b>43.5</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <span class="label">Caveat: the forced-Verifier baseline is not candidate-matched</span>
+      <p>In the recorded always-Verifier runs, the Verifier did not receive the same pre-call candidate that the learned policy passes. Table 4 therefore compares against a strong operational baseline, not a routing ablation with matched inputs. The MedQA row is the three-seed mean (see the Table 4 caption), not the single 82.0%@0.405 run of Table 9.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 5. Development-set operating points with the same manager and sub-agent pool. Selected on the development pools, not additional held-out tests. Accuracies in percent. ΔAcc. is positive when MARGENT is more accurate than force-all. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task</th><th class="num">Selected MARGENT acc.</th><th class="num">Calls</th><th class="num">Force all acc.</th><th class="num">Calls</th><th class="num">ΔAcc. (selected − force all)</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">85.0</td><td class="num">1.000</td><td class="num">86.5</td><td class="num">3.0</td><td class="num neg">−1.5</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">71.5</td><td class="num">1.065</td><td class="num">71.5</td><td class="num">3.0</td><td class="num">0.0</td></tr>
+          <tr><td>GPQA</td><td class="num">55.0</td><td class="num">1.040</td><td class="num">61.0</td><td class="num">3.0</td><td class="num neg">−6.0</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">81.1</td><td class="num">1.031</td><td class="num">75.2</td><td class="num">3.0</td><td class="num pos">+5.9</td></tr>
+          <tr class="hl"><td><b>Macro mean</b></td><td class="num"><b>73.2</b></td><td class="num"><b>1.034</b></td><td class="num">73.6</td><td class="num">3.0</td><td class="num">−0.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h4>Rescue and corruption under the learned policy</h4>
+      <p>Accuracy hides two opposing effects of delegation. Table 8 splits each high-call operating point into two shares of all examples: candidates that were wrong and end correct (correction, the paper's word for a rescue produced by the learned policy), and candidates that were correct and end wrong (corruption). Net value is positive for every policy, but the two shares are balanced very differently across tasks. AQuA-RAT corrects 48.0% of all examples and corrupts 2.4%, a twenty-to-one ratio. GPQA corrects 19.0% and corrupts 4.0%. A high oracle therefore does not by itself justify calling every sub-agent: the oracle keeps only successful branches, while an executable policy pays for its own mistakes.</p>
+    </div>
+    <div class="box">
+      <figure class="narrow">
+        <img src="static/images/fig_correction_corruption.svg" alt="Paired horizontal bars per task showing the correction fraction and the corruption fraction of all examples at the high-call operating points. AQuA-RAT has the largest correction bar at 0.480 against a corruption bar of 0.024.">
+        <figcaption><b>Figure 6.</b> Correction and corruption as fractions of all examples at the recorded high-call operating points (Table 8). AQuA-RAT corrects twenty times as many examples as it corrupts. Development diagnostic.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 8. Outcome decomposition at the recorded high-call MARGENT operating points. Correction and corruption are fractions of all examples (unconditional), not rates among the examples that were called. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task</th><th class="num">Calls</th><th class="num">Correction</th><th class="num">Corruption</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">1.000</td><td class="num">0.210</td><td class="num">0.035</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">1.065</td><td class="num">0.250</td><td class="num">0.045</td></tr>
+          <tr><td>GPQA</td><td class="num">1.110</td><td class="num">0.190</td><td class="num">0.040</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">1.031</td><td class="num">0.480</td><td class="num">0.024</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3><span class="rq">5e</span>Does the policy call on the right states?</h3>
+      <p>For analysis only, gold labels give the call gap: the probability of delegating when the candidate is wrong minus the probability when it is correct. The paper reports the gap at development operating points it calls selected. These are not necessarily the Table 5 points: Table 9 lists a MedQA point with the Table 5 values (85.0%, 1.000 calls) and a call gap of .000, while the MedQA gap reported here, 0.381, appears in Table 9 at the depth-1, ρ = 2 point (82.5%, .560 calls) <span class="todo">confirm which checkpoints the call-gap values refer to</span>. At those points the gap is positive on all four tasks: 0.381 on MedQA, 0.296 on MMLU-Pro, 0.067 on GPQA and 0.102 on AQuA-RAT. The small GPQA gap matches its weaker policy result: when candidates are hard to tell apart, the manager drifts toward indiscriminate calling. Across the representative points in Table 7, the gap is smallest on GPQA (0.017) and AQuA-RAT (0.152) and larger on MMLU-Pro (0.225) and MedQA (0.291). This is a descriptive pattern, not a causal relation: selective calling looks harder when the candidate is near chance.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 7. Selectivity at representative development operating points: candidate accuracy, its margin over random guessing (candidate accuracy minus 1/K for K choices), and the call gap. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task</th><th class="num">Choices K</th><th class="num">Candidate</th><th class="num">Margin</th><th class="num">Call gap</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">4</td><td class="num">0.685</td><td class="num">0.435</td><td class="num">0.291</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">10</td><td class="num">0.560</td><td class="num">0.460</td><td class="num">0.225</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">5</td><td class="num">0.390</td><td class="num">0.190</td><td class="num">0.152</td></tr>
+          <tr><td>GPQA</td><td class="num">4</td><td class="num">0.420</td><td class="num">0.170</td><td class="num">0.017</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>A positive gap by itself does not show that the policy predicts the marginal value of a specific sub-agent. The paper adds a stricter test, a matched-budget replay: hold the role and the number of calls fixed, then resample which examples get called, 2,000 times. MedQA's selected subset scores 82.0%, above the random 95% interval [75.0, 81.0]. MMLU-Pro (59.5% vs [54.0, 60.5]) and GPQA (51.0% vs [44.0, 53.0]) stay inside their intervals. The strongest better-than-random evidence is therefore on MedQA. The test does not separate candidate use from query difficulty.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Matched-budget replay: fixed role and call count, examples resampled 2,000 times. Accuracy of the selected subset vs the random 95% interval. The paper reports no AQuA-RAT replay. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task</th><th class="num">Selected subset</th><th class="num">Random 95% interval</th><th>Position</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">82.0%</td><td class="num">[75.0, 81.0]</td><td><span class="status ok">above</span></td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">59.5%</td><td class="num">[54.0, 60.5]</td><td><span class="status weak">inside</span></td></tr>
+          <tr><td>GPQA</td><td class="num">51.0%</td><td class="num">[44.0, 53.0]</td><td><span class="status weak">inside</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3><span class="rq">5f</span>Commit examples control the call-stop trade-off</h3>
+      <p>Within each pair of Table 9 the commit-to-rescue cap ρ is the only data-construction variable that changes. Keeping more commit examples lowers the call rate in every pair. The call gap generally rises at the same time, so the remaining calls concentrate on wrong candidates. Accuracy, however, is not monotone. The aggressive AQuA-RAT comparison removes 37.4% of calls and loses 12.6 points. ρ is a transparent control over policy behaviour, not a free efficiency gain.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_rho_sweep.svg" alt="Arrows in the plane of mean calls (x) against accuracy (y), one per comparison in Table 9, each from the lower rho value to the higher one and labelled with the rho values and the change in call gap. Every arrow points left, toward fewer calls; two point slightly up and two point down.">
+        <figcaption><b>Figure 7.</b> Controlled ρ comparisons (Table 9). Each arrow changes only ρ inside a fixed collection and training recipe, from the lower to the higher value. More commit examples always mean fewer calls; accuracy moves both ways. Development diagnostic.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 9. Controlled commit-to-rescue comparisons on development data. "All" keeps every available commit example. Each arrow changes only ρ within a fixed collection and training recipe. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Task / collection</th><th class="num">ρ</th><th class="num">Accuracy</th><th class="num">Calls</th><th class="num">Call gap</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA depth 2</td><td class="num">0 → 3</td><td class="num">85.0 → 82.0</td><td class="num">1.000 → 0.405</td><td class="num">.000 → .474</td></tr>
+          <tr><td>MedQA depth 1</td><td class="num">1 → 2</td><td class="num">80.5 → 82.5</td><td class="num">.700 → .560</td><td class="num">.299 → .381</td></tr>
+          <tr><td>MMLU-Pro depth 1</td><td class="num">1 → 2</td><td class="num">64.0 → 65.0</td><td class="num">.475 → .390</td><td class="num">.289 → .296</td></tr>
+          <tr><td>AQuA-RAT depth 3</td><td class="num">0 → all</td><td class="num">81.1 → 68.5</td><td class="num">1.000 → .626</td><td class="num">.000 → .195</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3><span class="rq">5g</span>Does the candidate matter to a delegated call?</h3>
+      <p>If marginal value is state-specific, then what a sub-agent is handed should change what it is worth, independent of the question. The paper tests this on AQuA-RAT with the ρ = 0 checkpoint, which delegates on every example. Blanking only the <code>current_solution</code> argument passed to the Verifier, with no retraining and no change in call budget, lowers accuracy from 81.1% to 74.0%. Correction falls from 0.480 to 0.409 while corruption is essentially unchanged. The candidate is thus a useful object for a delegated call to audit. Routing was fixed in this run, so the ablation does not by itself show that the router uses the candidate when deciding whether to call.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Verifier candidate ablation on AQuA-RAT. Same ρ = 0 checkpoint, same call budget; only the Verifier's <code>current_solution</code> input is blanked. <span class="status weak">development diagnostic</span></caption>
+        <thead><tr><th>Metric</th><th class="num">With candidate</th><th class="num">Candidate blanked</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>Accuracy</td><td class="num"><b>81.1%</b></td><td class="num">74.0%</td></tr>
+          <tr><td>Correction (fraction of all examples)</td><td class="num">0.480</td><td class="num">0.409</td></tr>
+          <tr><td>Corruption (fraction of all examples)</td><td class="num">0.0240</td><td class="num">0.0236</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 6. Appendix diagnostics ===== -->
+<section class="section" id="diagnostics">
+  <div class="container">
+    <h2>Appendix diagnostics</h2>
+    <div class="prose">
+      <p>Two sets of results in the paper's appendix explain design choices. Neither is a main comparison.</p>
+      <h3>(a) Outcome-only GRPO collapses to three calls</h3>
+      <p>Appendix D records two GRPO continuations that start from selective SFT checkpoints and use a terminal binary correctness reward with no call penalty. Both converge to the three-call ceiling: 2.98 calls per example for the MedQA 8B manager and 3.00 for the 9B manager. Accuracy records for these two runs are missing from the exported record and are not imputed, so the appendix supports a claim about call behaviour, not about the accuracy cost of the collapse. For reference, Figure 8 draws the selective SFT MedQA three-seed mean of 0.517 calls (Table 4) and the Table 3 macro mean of 0.526.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_grpo_collapse.svg" alt="Two panels. Left: bars for mean calls per example of the two GRPO continuations, 2.98 for the 8B manager and 3.00 for the 9B manager, against reference lines at 0.517 plus or minus 0.043 (selective SFT MedQA three-seed mean) and 0.526 (Table 3 macro mean). Right: call-count distribution of the released 8B traces, with all 200 dev questions at three calls and 198 of 200 test questions at three calls.">
+        <figcaption><b>Figure 8.</b> Outcome-only GRPO continuations (Table 10). Left: mean calls per example for the two continuations against the selective SFT reference (0.517 ± 0.043 on MedQA, three seeds) and the Table 3 macro mean (0.526). Right: number of sub-agent calls per question in the released 8B traces. All 200 dev questions and 198 of 200 test questions made three calls; the other two test questions made one and two calls. Appendix diagnostic.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 10. The two recorded GRPO continuations. Reward: terminal binary correctness, no call penalty. Calls = mean sub-agent calls per example; accuracy was not retained in the exported record. <span class="status weak">appendix diagnostic</span></caption>
+        <thead><tr><th>Run</th><th class="num">Calls</th><th class="num">Accuracy</th><th>Observed behaviour</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA, 8B manager</td><td class="num">2.98</td><td class="num">–</td><td>Approaches the three-call ceiling</td></tr>
+          <tr><td>MedQA, 9B manager</td><td class="num">3.00</td><td class="num">–</td><td>Three calls on every example; the solution is emitted late</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h4>The Appendix D 8B run in the released snapshot</h4>
+      <p>The supplementary snapshot contains a Qwen3-8B GRPO run (<code>results/medqa_marginal_v1/</code>, checkpoint <code>grpo_binary_mv2</code>) whose mean test calls, 2.985, match the 2.98 of the "MedQA, 8B manager" row. The paper does not name the run, and the accuracy records of the Table 10 runs are absent from its exported record, so the accuracies below come from the snapshot only. On the 200 dev questions: candidate 55.5%, final 67.5%, 3.000 calls per question, 36 candidates corrected, 12 corrupted, exact McNemar p = 7.2e-4 against the candidate. On the 200 test questions: candidate 63.5%, final 76.5%, 2.985 calls, 38 corrected, 12 corrupted, p = 3.1e-4. Its call rate is 100% for both wrong and correct candidates, so the call gap is 0. The sub-agents help; the manager simply never learned to stop.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_routing_behavior.svg" alt="Two panels for the released 8B GRPO traces. Left: for dev and test, 100 percent stacked horizontal bars of the four candidate-to-final transition classes (stayed correct, corrected, corrupted, stayed wrong) with counts. Right: call-count distribution for dev and test over 0, 1, 2 and 3 calls, with nearly every question at 3 calls.">
+        <figcaption><b>Figure 9.</b> The Appendix D 8B run on MedQA dev and test (200 questions each). Left: candidate to final transitions. Right: number of sub-agent calls per question. The manager calls all three sub-agents on almost every question whether or not its candidate was already correct. Appendix diagnostic.</figcaption>
+      </figure>
+    </div>
+    <div class="prose">
+      <p class="small">The same snapshot holds the one-step interventional collection of that run (400 MedQA training questions, depth 1): direct 55.0%, forced Extractor 58.5%, forced Reasoner 78.8%, forced Verifier 84.5%, hindsight best one-step branch 91.0%; rescued/corrupted counts 25/11, 100/5 and 127/9. Those 400 questions overlap the sub-agent SFT questions (400/400; the collection command lacked <code>--exclude_sft_example_ids</code>), so its rescue rates are likely inflated. The dev and test traces do not overlap the SFT questions. This run is not the selective SFT policy of the main text.</p>
+      <h3>(b) Predecessor scaling diagnostic</h3>
+      <p>Before the marginal-value experiments, the authors evaluated cold-start, generic and task-specific multi-agent training variants on three of the four final tasks. Backbones were Qwen3-4B, Qwen3-8B and Qwen3.5-9B; development sets held 100 to 200 examples per task. Table 6 lists, for each task and size, the best variant minus the base model of the same size. The macro gain drops from +20.0 at 4B to +4.8 at 9B, and on GPQA the 9B gain is exactly zero. Since each cell takes a maximum over several variants on a small sample, the table shows the tension that motivated the work. It is not a scaling law and not a main comparison. The lineage also explains the method: outcome-only GRPO and extra sub-agent SFT did not reliably improve the earlier pipeline, while manager-side cold-start SFT improved most cells. That motivated the controlled same-state collection.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Table 6. Predecessor pipeline: gain in percentage points of the best multi-agent variant over the base model of the same size, computed retrospectively. <span class="status weak">development diagnostic, predecessor pipeline</span></caption>
+        <thead><tr><th>Task</th><th class="num">Qwen3-4B</th><th class="num">Qwen3-8B</th><th class="num">Qwen3.5-9B</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num pos">+16.5</td><td class="num pos">+20.0</td><td class="num pos">+4.0</td></tr>
+          <tr><td>GPQA</td><td class="num pos">+13.0</td><td class="num pos">+6.0</td><td class="num">+0.0</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num pos">+30.5</td><td class="num pos">+22.5</td><td class="num pos">+10.5</td></tr>
+          <tr class="hl"><td><b>Macro gain</b></td><td class="num pos">+20.0</td><td class="num pos">+16.2</td><td class="num pos">+4.8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_main_results.svg" alt="Four bar-chart panels, one per benchmark (MedQA, LegalBench, GPQA, MMLU-Pro). For each manager size (4B, 8B, 9B) three bars show base accuracy, cold-start SFT accuracy and the best GRPO cell, with one-standard-error bars and the best cell name labelled.">
+        <figcaption><b>Figure 10.</b> The predecessor pipeline (Appendix B data, <code>results/predecessor_scaling/main_results.json</code>): base, cold-start SFT and best GRPO cell per benchmark and manager size, with ±1 binomial SE. Table 6 is the GRPO bar minus the base bar for MedQA, GPQA and MMLU-Pro. LegalBench appears in the released record but was dropped from the paper. This diagnostic motivated same-state collection; it is not a main comparison.</figcaption>
+      </figure>
+    </div>
+    <div class="prose">
+      <p class="small">Across the 28 released GRPO cells, the mean change is +13.9 pp over base and +4.8 pp over cold start; 26 cells are above base, 1 equal, 1 below. GRPO sits below its own cold start in 5 of 28 cells. Binomial SE at p = 0.5 is 5.0 pp at n = 100 and 3.5 pp at n = 200.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 7. Limitations ===== -->
+<section class="section" id="limitations">
+  <div class="container">
+    <h2>Limitations and scope</h2>
+    <div class="prose">
+      <p>The list follows the paper's own scope statements and its checklist answers.</p>
+      <ul>
+        <li><b>Fixed three-agent pool.</b> All results use Extractor, Reasoner and Verifier. Force-all uses the recorded scaffold order; no sub-agent order sweep exists.</li>
+        <li><b>Mostly single runs.</b> Only one MedQA SFT configuration was replicated with three additional seeds (80.5 ± 1.0 accuracy, 0.517 ± 0.043 calls). Every other task-level comparison is a single run, so the paper reports no comprehensive error bars or significance tests.</li>
+        <li><b>Development diagnostics vs locked evaluations.</b> Tables 4, 5, 7, 8 and 9 are operating points selected on the development pools. Only Table 3 is a locked evaluation, and GPQA-Diamond-100 doubled as its development (diagnostic) pool.</li>
+        <li><b>Forced-Verifier baseline is not candidate-matched.</b> The recorded implementation does not pass the same pre-call candidate to the Verifier.</li>
+        <li><b>End-to-end, not routing-only.</b> SFT updates the full manager, so candidate-to-final gains mix routing and revision. The paper reports no independently prompted single-model baseline; on AQuA-RAT it states that the scaffold candidate is much weaker than a plain-answer prompt.</li>
+        <li><b>No token or latency numbers.</b> These were not collected. Resource use is stated only in sub-agent calls.</li>
+        <li><b>Exported record is incomplete.</b> Optimizer settings, hardware, synthesis prompts, LoRA configuration, stable example ids and per-example outputs for paired confidence intervals are absent. The checklist answers "No" to full reproducibility details, statistical significance and compute resources.</li>
+        <li><b>GPQA is near chance.</b> The candidate is 17 points above 1/K, the call gap is close to indiscriminate calling, and the sample is too small to resolve a small difference. Selectivity is weakest there.</li>
+      </ul>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>What the reported evidence supports.</caption>
+        <thead><tr><th>Claim</th><th>Evidence</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>One well-chosen call captures most of the measured oracle gain</td><td>Table 1: Gain@1 91.7% macro; third call adds zero on the two depth-3 collections</td><td><span class="status ok">supported on the collections</span></td></tr>
+          <tr><td>The learned manager beats its own candidate on collection-disjoint sets with few calls</td><td>Table 3: +17.1 pp at 0.526 calls, positive on all four tasks</td><td><span class="status ok">supported (end-to-end, single run)</span></td></tr>
+          <tr><td>About one selected call matches three forced calls</td><td>Table 5: 73.2% at 1.03 calls vs 73.6% at 3.0; GPQA remains 6.0 points behind</td><td><span class="status weak">development diagnostic</span></td></tr>
+          <tr><td>The policy calls on the right states</td><td>Positive call gaps on all tasks; matched-budget replay above the random interval only on MedQA</td><td><span class="status weak">partial</span></td></tr>
+          <tr><td>Gain over an independently prompted single-model baseline</td><td>Not reported in the paper</td><td><span class="status no">not shown</span></td></tr>
+          <tr><td>Token or latency savings</td><td>Not collected</td><td><span class="status no">not shown</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. Code and reproducibility ===== -->
+<section class="section" id="resources">
+  <div class="container">
+    <h2>Code and reproducibility</h2>
+    <div class="prose">
+      <p>The supplementary snapshot implements the method end to end behind one CLI, <code>python -m src.pipeline.cli &lt;stage&gt;</code>. The code predates the paper's final vocabulary: a sub-agent is an <code>advisor</code> and the candidate solution is the <code>DRAFT_ANSWER</code> line (<code>initial_draft</code> in evaluation rows). The table maps the stages to the paper's concepts.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Pipeline stages and the paper concepts they implement.</caption>
+        <thead><tr><th>Stage</th><th>Paper concept</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>build_marginal_sft</code></td><td>Interventional collection (Sec. 3.2) and shortest-success selection (Sec. 3.3, Eq. 3 and 4)</td><td><code>--mv_max_depth</code> 1 to 3 is the search depth D; <code>--mv_max_commit_rescue_ratio</code> is ρ (0 = rescues only, −1 = keep every commit)</td></tr>
+          <tr><td><code>train_manager_sft</code></td><td>Marginal-value distillation (Sec. 3.3)</td><td>SFT of the full manager on <code>manager_sft_marginal.jsonl</code></td></tr>
+          <tr><td><code>eval_manager_tools</code></td><td>Learned delegate-or-commit policy</td><td>Report fields: <code>initial_draft_accuracy</code> = candidate, <code>avg_tool_calls</code>, <code>draft_conditioned_call_gap</code> = call gap, correction and corruption rates</td></tr>
+          <tr><td><code>eval_manager_forced --eval_forced_tools</code></td><td>Forced one Verifier call; force all three</td><td><code>verifier</code> or <code>extractor,reasoner,verifier</code></td></tr>
+          <tr><td><code>train_manager_grpo</code></td><td>Appendix D outcome-only GRPO continuation</td><td>Diagnostic only; not part of the method</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Two things are not in the snapshot. There is no loader for AQuA-RAT, the paper's fourth benchmark (a LegalBench loader is present but unused in the paper). The paper's Qwen3.5-9B per-example records behind Tables 1 to 5 are also absent; they were exported with the paper's dashboard. The two released record sets, the Appendix B predecessor diagnostic and the Appendix D 8B run, can be summarised without a GPU:</p>
+      <pre><code>cd supplementary_code
+python scripts/summarize_main_results.py                     # Appendix B: all 28 cells with Δ vs base and Δ vs cold start
+python scripts/analyze_results.py results/medqa_marginal_v1   # Appendix D 8B run: Wilson 95% intervals, exact McNemar tests</code></pre>
+      <p>The Chinese milestone report covers the code snapshot, the data-hygiene checks and the next steps: <a href="report.html">阶段实验报告 (report.html)</a>. The transcribed paper tables are at <a href="static/data/paper_tables.json">static/data/paper_tables.json</a>; the Appendix B record is at <a href="static/data/main_results.json">static/data/main_results.json</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 9. BibTeX ===== -->
+<section class="section" id="bibtex">
+  <div class="container">
+    <h2>BibTeX</h2>
+    <div class="prose">
+      <p><span class="todo">Placeholder entry. Fill in authors, venue and URL once the paper is public.</span></p>
+      <pre><code>@misc{anonymous2026margent,
+  author = {Anonymous},
+  title  = {MARGENT: Measuring the Marginal Value of Delegation in Agentic Systems},
+  year   = {2026},
+  note   = {Under review}
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>Page template adapted from the <a href="https://nerfies.github.io/">Nerfies</a> project-page style. Code released under the MIT license. Anonymous submission under review; numbers are transcribed from the submitted manuscript.</p>
+  </div>
+</footer>
+
+</body>
+</html>

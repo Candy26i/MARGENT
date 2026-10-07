@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1718" height="744" viewBox="0 0 1718 744">
+<defs>
+<marker id="arrow0" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3.5 L0,7 z" fill="#020202"/></marker>
+<marker id="arrow1" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3.5 L0,7 z" fill="#426B9D"/></marker>
+<marker id="arrow2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3.5 L0,7 z" fill="#6A884E"/></marker>
+<marker id="arrow3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3.5 L0,7 z" fill="#DBB69E"/></marker>
+</defs>
+<rect x="0" y="0" width="1718" height="744" fill="#FFFFFF"/>
+<rect x="62" y="62" width="218" height="152" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#C4C4C4" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="74" y="86" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">Research Goal</text>
+<text x="74" y="103" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202"></text>
+<text x="74" y="120" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">A Manager decides whether to</text>
+<text x="74" y="137" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">consult another frozen advisor</text>
+<text x="74" y="154" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">or COMMIT its current answer.</text>
+<rect x="62" y="255" width="218" height="294" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#C4C4C4" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="74" y="279" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">Benchmarks</text>
+<text x="74" y="296" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202"></text>
+<text x="74" y="313" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">MedQA</text>
+<text x="74" y="330" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">LegalBench</text>
+<text x="74" y="347" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">MMLU-Pro</text>
+<text x="74" y="364" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">GPQA</text>
+<text x="74" y="381" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202"></text>
+<text x="74" y="399" text-anchor="start" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#020202">Question + Context</text>
+<rect x="300" y="62" width="1350" height="310" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#C4C4C4" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="975" y="86" text-anchor="middle" font-family="Comic Sans MS" font-size="20" font-weight="700" fill="#0D2507">Stage 1: Build Frozen Advisors &amp; Cold-start the Manager</text>
+<rect x="800" y="90" width="225" height="172" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#426B9D" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="912" y="114" text-anchor="middle" font-family="Comic Sans MS" font-size="15" font-weight="700" fill="#B5150B">Synthetic Advisor Data</text>
+<rect x="1225" y="86" width="245" height="176" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#6A884E" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="1348" y="110" text-anchor="middle" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#0D2507">Frozen Advisors (Signals Only)</text>
+<rect x="300" y="410" width="1350" height="310" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#C4C4C4" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="975" y="434" text-anchor="middle" font-family="Comic Sans MS" font-size="20" font-weight="700" fill="#0D2507">Stage 2: Learn the Delegate-or-Commit Policy with GRPO</text>
+<rect x="700" y="447" width="205" height="222" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#DBB69E" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="802" y="471" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#0D2507">Routing Actions (≤1 each)</text>
+<rect x="940" y="447" width="245" height="222" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#6A884E" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="1062" y="471" text-anchor="middle" font-family="Comic Sans MS" font-size="15" font-weight="700" fill="#0D2507">Frozen Advisors — Signals Only</text>
+<rect x="1215" y="447" width="245" height="130" rx="14" fill="#FFFFFF" fill-opacity="0.22" stroke="#DBB69E" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="1338" y="471" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#B5150B">Binary Outcome Reward</text>
+<polyline points="244,505 168,505 168,608 102,608" fill="none" stroke="#426B9D" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow1)"/>
+<rect x="141" y="542" width="56" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="168" y="554" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#426B9D">normalize</text>
+<polyline points="280,402 290,402 315,402 315,164 330,164" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="296" y="283" width="37" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="315" y="295" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">sample</text>
+<polyline points="535,164 549,164 549,164 570,164" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="528" y="154" width="50" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="552" y="166" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">generate</text>
+<polyline points="760,164 789,164 789,189 820,189" fill="none" stroke="#426B9D" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow1)"/>
+<rect x="770" y="168" width="37" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="789" y="180" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#426B9D">accept</text>
+<polyline points="1005,189 1019,189 1019,176 1065,176" fill="none" stroke="#426B9D" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow1)"/>
+<rect x="1012" y="166" width="34" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1028" y="178" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#426B9D">train</text>
+<polyline points="1185,176 1236,176 1236,186 1245,186" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="1201" y="166" width="37" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1220" y="178" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">freeze</text>
+<polyline points="280,362 285,360 290,360 290,315 460,315 480,315" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="329" y="305" width="56" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="357" y="317" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">questions</text>
+<polyline points="1348,246 1348,274 1348,268 860,268 860,280 860,284" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="1079" y="258" width="68" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1113" y="270" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">tool traces</text>
+<polyline points="1240,315 1128,315 1128,315 1290,315" fill="none" stroke="#DBB69E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow3)"/>
+<rect x="1136" y="305" width="34" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1152" y="317" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#DBB69E">SFT</text>
+<polyline points="240,625 270,632 310,632 310,558 330,558" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="293" y="614" width="34" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="310" y="626" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">input</text>
+<polyline points="442,558 478,558 478,555 475,555" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="441" y="548" width="43" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="463" y="560" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">rollout</text>
+<polyline points="665,555 686,555 686,546 720,546" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="671" y="536" width="34" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="688" y="548" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">parse</text>
+<polyline points="885,546 932,546 932,563 960,563" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="906" y="536" width="50" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="931" y="548" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">delegate</text>
+<polyline points="1061,636 1060,666 570,666 570,640 570,635" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="747" y="656" width="136" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="815" y="668" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">signal + revised draft</text>
+<polyline points="570,475 570,392 1338,392 1338,443 1338,489" fill="none" stroke="#DBB69E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow3)"/>
+<rect x="924" y="382" width="74" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="961" y="394" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#DBB69E">final answer</text>
+<polyline points="1338,550 1338,550 1338,627 1338,627" fill="none" stroke="#DBB69E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow3)"/>
+<rect x="1297" y="578" width="81" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1338" y="590" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#DBB69E">binary reward</text>
+<polyline points="1290,654 1210,700 385,700 385,665 385,638" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="789" y="690" width="81" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="830" y="702" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">policy update</text>
+<polyline points="834,652 905,688 1450,688 1485,635" fill="none" stroke="#020202" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow0)"/>
+<rect x="1149" y="678" width="37" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1168" y="690" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#020202">COMMIT</text>
+<polyline points="1428,654 1465,665 1538,665 1538,635" fill="none" stroke="#6A884E" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow2)"/>
+<rect x="1476" y="655" width="34" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.94"/>
+<text x="1493" y="667" text-anchor="middle" font-family="Comic Sans MS" font-size="9.5" fill="#6A884E">eval</text>
+<text x="58" y="39" text-anchor="start" font-family="Comic Sans MS" font-size="21" font-weight="700" fill="#B5150B">Learning When to Commit</text>
+<text x="835" y="36" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#0D2507">Delegate-or-commit routing learned from binary task outcomes</text>
+<text x="168" y="247" text-anchor="middle" font-family="Comic Sans MS" font-size="17" font-weight="700" fill="#B5150B">MCQ Task Stream</text>
+<text x="127" y="474" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Answer Space</text>
+<rect x="88" y="488" width="156" height="34" rx="6" fill="#D6E1F5" fill-opacity="1" stroke="#426B9D" stroke-width="1.5"/>
+<text x="166" y="509" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Multiple-choice options  A–D</text>
+<path d="M 102,582 C 102,572 240,572 240,582 L 240,634 C 240,644 102,644 102,634 Z" fill="#F2F2F2" stroke="#020202" stroke-width="1.5"/>
+<ellipse cx="171.0" cy="582" rx="69.0" ry="10" fill="#F2F2F2" stroke="#020202" stroke-width="1.5"/>
+<text x="171" y="605" text-anchor="middle" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">Normalized</text>
+<text x="171" y="621" text-anchor="middle" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">Task Pool</text>
+<text x="171" y="666" text-anchor="middle" font-family="Comic Sans MS" font-size="10" font-weight="700" fill="#B5150B">Ground truth is hidden</text>
+<text x="171" y="678" text-anchor="middle" font-family="Comic Sans MS" font-size="10" font-weight="700" fill="#B5150B">from the routing policy</text>
+<rect x="330" y="105" width="205" height="118" rx="14" fill="#F2F2F2" fill-opacity="1" stroke="#C4C4C4" stroke-width="1.5"/>
+<text x="340" y="139" text-anchor="start" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">Teacher Synthesis</text>
+<text x="340" y="154" text-anchor="start" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202"></text>
+<text x="340" y="169" text-anchor="start" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">GPT / Claude / DeepSeek</text>
+<text x="340" y="183" text-anchor="start" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">creates specialist signals</text>
+<text x="340" y="198" text-anchor="start" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">from benchmark questions</text>
+<rect x="570" y="105" width="190" height="118" rx="14" fill="#FFFFFF" fill-opacity="1" stroke="#C4C4C4" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="580" y="129" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">Quality Gates</text>
+<text x="580" y="145" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202"></text>
+<text x="580" y="161" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">JSON parse</text>
+<text x="580" y="177" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">Pydantic schema</text>
+<text x="580" y="193" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">choice coverage</text>
+<text x="580" y="209" text-anchor="start" font-family="Comic Sans MS" font-size="13" font-weight="700" fill="#020202">symmetric leakage audit</text>
+<rect x="820" y="128" width="185" height="36" rx="5" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="912" y="144" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Extractor</text>
+<text x="912" y="157" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Evidence signals</text>
+<rect x="820" y="171" width="185" height="36" rx="5" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="912" y="187" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Reasoner</text>
+<text x="912" y="200" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Neutral decision scaffold</text>
+<rect x="820" y="214" width="185" height="36" rx="5" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="912" y="230" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Verifier</text>
+<text x="912" y="243" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Current-draft audit</text>
+<rect x="1065" y="112" width="120" height="128" rx="18" fill="#FDFAF5" fill-opacity="1" stroke="#DBB69E" stroke-width="1.5"/>
+<text x="1125" y="164" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#6762E3">✦</text>
+<text x="1125" y="181" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#6762E3">LoRA-SFT</text>
+<text x="1125" y="199" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#6762E3">× 3</text>
+<rect x="1245" y="126" width="205" height="34" rx="8" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1348" y="147" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Extractor  →  evidence</text>
+<rect x="1245" y="169" width="205" height="34" rx="8" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1348" y="190" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Reasoner  →  scaffold</text>
+<rect x="1245" y="212" width="205" height="34" rx="8" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1348" y="233" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Verifier  →  draft audit</text>
+<rect x="480" y="284" width="760" height="62" rx="10" fill="#FDFAF5" fill-opacity="1" stroke="#DBB69E" stroke-width="1.5"/>
+<text x="860" y="312" text-anchor="middle" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">Manager Cold-start Demonstrations</text>
+<text x="860" y="327" text-anchor="middle" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">DRAFT_ANSWER  →  delegate(tool)  →  advisor signal  →  ...  →  ANSWER</text>
+<rect x="1290" y="286" width="210" height="58" rx="18" fill="#FFFFFF" fill-opacity="1" stroke="#DBB69E" stroke-width="1.5"/>
+<text x="1395" y="312" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#0D2507">✦  Manager_SFT</text>
+<text x="1395" y="329" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#0D2507">Qwen3-8B</text>
+<rect x="330" y="478" width="112" height="160" rx="18" fill="#FDFAF5" fill-opacity="1" stroke="#DBB69E" stroke-width="1.5"/>
+<text x="386" y="525" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#6762E3">✦</text>
+<text x="386" y="545" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#6762E3">Manager_SFT</text>
+<text x="386" y="564" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#6762E3">Qwen3-8B</text>
+<text x="386" y="584" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#6762E3"></text>
+<text x="386" y="603" text-anchor="middle" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#6762E3">rollout</text>
+<rect x="475" y="475" width="190" height="160" rx="14" fill="#FFFFFF" fill-opacity="0.25" stroke="#DBB69E" stroke-width="1.5" stroke-dasharray="10 8"/>
+<text x="485" y="493" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Rollout Trace</text>
+<text x="485" y="512" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202"></text>
+<text x="485" y="532" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Draft₀</text>
+<text x="485" y="551" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">→ action₀</text>
+<text x="485" y="571" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">→ signal₀</text>
+<text x="485" y="591" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">→ Draft₁</text>
+<text x="485" y="610" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">→ ...</text>
+<text x="485" y="630" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">→ COMMIT</text>
+<rect x="720" y="490" width="165" height="32" rx="4" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="802" y="510" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Consult Extractor</text>
+<rect x="720" y="530" width="165" height="32" rx="4" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="802" y="550" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Consult Reasoner</text>
+<rect x="720" y="570" width="165" height="32" rx="4" fill="#D6E1F5" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="802" y="590" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Consult Verifier</text>
+<rect x="720" y="620" width="165" height="32" rx="4" fill="#FCE1D6" fill-opacity="1" stroke="#DBB69E" stroke-width="1.5"/>
+<text x="802" y="640" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">COMMIT current answer</text>
+<rect x="960" y="490" width="205" height="42" rx="7" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1062" y="509" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Extractor</text>
+<text x="1062" y="522" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">key evidence</text>
+<rect x="960" y="542" width="205" height="42" rx="7" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1062" y="561" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Reasoner</text>
+<text x="1062" y="574" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">choice-aware scaffold</text>
+<rect x="960" y="594" width="205" height="42" rx="7" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1062" y="613" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">Verifier</text>
+<text x="1062" y="626" text-anchor="middle" font-family="Comic Sans MS" font-size="11" font-weight="700" fill="#020202">audits current_draft</text>
+<rect x="1235" y="489" width="205" height="34" rx="5" fill="#FCE1D6" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="1338" y="511" text-anchor="middle" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">Correct final answer  →  1</text>
+<rect x="1235" y="533" width="205" height="34" rx="5" fill="#F2F2F2" fill-opacity="1" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="1338" y="555" text-anchor="middle" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#020202">Incorrect final answer  →  0</text>
+<rect x="1225" y="600" width="225" height="54" rx="18" fill="#EFF7EA" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1338" y="624" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#0D2507">✦  Manager_GRPO</text>
+<text x="1338" y="641" text-anchor="middle" font-family="Comic Sans MS" font-size="14" font-weight="700" fill="#0D2507">Qwen3-8B</text>
+<rect x="1455" y="475" width="165" height="160" rx="14" fill="#FFFFFF" fill-opacity="1" stroke="#6A884E" stroke-width="1.5"/>
+<text x="1465" y="503" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Evaluation</text>
+<text x="1465" y="522" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202"></text>
+<text x="1465" y="542" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Accuracy</text>
+<text x="1465" y="561" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Avg. consultations</text>
+<text x="1465" y="581" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Oracle regret</text>
+<text x="1465" y="600" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Risk–coverage</text>
+<text x="1465" y="620" text-anchor="start" font-family="Comic Sans MS" font-size="16" font-weight="700" fill="#020202">Held-out transfer</text>
+<text x="1000" y="732" text-anchor="middle" font-family="Comic Sans MS" font-size="12" font-weight="700" fill="#B5150B">Binary outcome feedback teaches the policy whether to consult again or COMMIT.</text>
+</svg>

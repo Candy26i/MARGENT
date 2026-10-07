@@ -1,0 +1,104 @@
+{
+  "_source": "MARGENT: Measuring the Marginal Value of Delegation in Agentic Systems (NeurIPS 2026 submission, anonymous). Values transcribed from the PDF tables and text; accuracies in percent unless noted.",
+  "setup": {
+    "manager": "Qwen3.5-9B",
+    "sub_agents": ["Extractor", "Reasoner", "Verifier"],
+    "collection_states": {"MedQA": 400, "AQuA-RAT": 400, "MMLU-Pro": 400, "GPQA": 200},
+    "development_pool": {"MedQA": 200, "MMLU-Pro": 200, "AQuA-RAT": 254, "GPQA": 100},
+    "locked_eval_n": {"MedQA": 500, "MMLU-Pro": 500, "AQuA-RAT": 254, "GPQA": 100},
+    "search_depth": {"MedQA": 3, "AQuA-RAT": 3, "MMLU-Pro": 2, "GPQA": 2},
+    "rho_sweep": [0, 0.5, 1, 2, 3],
+    "locked_checkpoints": {"MedQA": "sft_3.0_s1", "AQuA-RAT": "sft_1.0", "MMLU-Pro": "sft_2.0", "GPQA": "sft_2.0"},
+    "unsolved_roots": {"MedQA": "31/400", "AQuA-RAT": "51/400", "MMLU-Pro": "106/400", "GPQA": "61/200"}
+  },
+  "table1_oracle_by_depth": {
+    "_columns": ["n", "commit_A0", "best_1_call_A1", "best_measured_AD", "gain_at_1_pct"],
+    "MedQA":      [400, 76.00, 91.75, 92.25, 96.9],
+    "AQuA-RAT":   [400, 54.25, 85.75, 87.25, 95.5],
+    "MMLU-Pro":   [400, 53.25, 71.75, 73.50, 91.4],
+    "GPQA":       [200, 43.00, 65.00, 69.50, 83.0],
+    "Macro mean": [null, 56.63, 78.56, 80.63, 91.7]
+  },
+  "table2_net_marginal_value_pp": {
+    "_columns": ["Extractor", "Reasoner", "Verifier"],
+    "MedQA":    [2.0, 6.8, 10.0],
+    "MMLU-Pro": [-0.5, 2.3, 15.1],
+    "GPQA":     [0.5, 4.1, 15.5],
+    "AQuA-RAT": [-4.5, -4.3, 29.4]
+  },
+  "table3_collection_disjoint_eval": {
+    "_columns": ["n", "candidate", "margent", "gain_pp", "calls"],
+    "MedQA":      [500, 73.4, 79.8, 6.4, 0.460],
+    "AQuA-RAT":   [254, 37.4, 76.8, 39.4, 0.780],
+    "MMLU-Pro":   [500, 49.6, 60.2, 10.6, 0.352],
+    "GPQA":       [100, 42.0, 54.0, 12.0, 0.510],
+    "Macro mean": [null, 50.6, 67.7, 17.1, 0.526]
+  },
+  "table4_low_call_vs_always_verifier": {
+    "_columns": ["margent_acc", "margent_calls", "verifier_acc", "verifier_calls", "fewer_calls_pct"],
+    "_note": "Development diagnostics. MedQA row is the mean over three additional seeds (80.5 +/- 1.0 accuracy, 0.517 +/- 0.043 calls); other rows single runs.",
+    "MedQA":      [80.5, 0.517, 84.5, 1.0, 48.3],
+    "MMLU-Pro":   [64.5, 0.340, 67.0, 1.0, 66.0],
+    "GPQA":       [54.0, 0.510, 55.0, 1.0, 49.0],
+    "AQuA-RAT":   [78.0, 0.894, 76.8, 1.0, 10.6],
+    "Macro mean": [69.3, 0.565, 70.8, 1.0, 43.5]
+  },
+  "table5_selected_vs_force_all": {
+    "_columns": ["margent_acc", "margent_calls", "force_all_acc", "force_all_calls", "delta_acc"],
+    "_note": "Development-set operating points (validation-selected diagnostics).",
+    "MedQA":      [85.0, 1.000, 86.5, 3.0, -1.5],
+    "MMLU-Pro":   [71.5, 1.065, 71.5, 3.0, 0.0],
+    "GPQA":       [55.0, 1.040, 61.0, 3.0, -6.0],
+    "AQuA-RAT":   [81.1, 1.031, 75.2, 3.0, 5.9],
+    "Macro mean": [73.2, 1.034, 73.6, 3.0, -0.4]
+  },
+  "call_gap_selected_dev_operating_points": {"MedQA": 0.381, "MMLU-Pro": 0.296, "GPQA": 0.067, "AQuA-RAT": 0.102},
+  "matched_budget_replay": {
+    "_note": "Fixed role and call count, examples resampled 2,000 times; accuracy of the selected subset vs the random 95% interval.",
+    "MedQA":    {"selected": 82.0, "random_interval": [75.0, 81.0]},
+    "MMLU-Pro": {"selected": 59.5, "random_interval": [54.0, 60.5]},
+    "GPQA":     {"selected": 51.0, "random_interval": [44.0, 53.0]}
+  },
+  "table6_predecessor_gain_pp": {
+    "_columns": ["Qwen3-4B", "Qwen3-8B", "Qwen3.5-9B"],
+    "_note": "Appendix B. Best predecessor multi-agent variant minus same-size base model, development sets of 100-200 examples.",
+    "MedQA":      [16.5, 20.0, 4.0],
+    "GPQA":       [13.0, 6.0, 0.0],
+    "MMLU-Pro":   [30.5, 22.5, 10.5],
+    "Macro gain": [20.0, 16.2, 4.8]
+  },
+  "table7_selectivity": {
+    "_columns": ["choices_K", "candidate", "margin", "call_gap"],
+    "MedQA":    [4, 0.685, 0.435, 0.291],
+    "MMLU-Pro": [10, 0.560, 0.460, 0.225],
+    "AQuA-RAT": [5, 0.390, 0.190, 0.152],
+    "GPQA":     [4, 0.420, 0.170, 0.017]
+  },
+  "table8_outcome_decomposition": {
+    "_columns": ["calls", "correction", "corruption"],
+    "_note": "Recorded high-call MARGENT operating points; unconditional fractions of all examples.",
+    "MedQA":    [1.000, 0.210, 0.035],
+    "MMLU-Pro": [1.065, 0.250, 0.045],
+    "GPQA":     [1.110, 0.190, 0.040],
+    "AQuA-RAT": [1.031, 0.480, 0.024]
+  },
+  "table9_rho_comparisons": {
+    "_columns": ["rho_from", "rho_to", "acc_from", "acc_to", "calls_from", "calls_to", "gap_from", "gap_to"],
+    "MedQA depth 2":    [0, 3, 85.0, 82.0, 1.000, 0.405, 0.000, 0.474],
+    "MedQA depth 1":    [1, 2, 80.5, 82.5, 0.700, 0.560, 0.299, 0.381],
+    "MMLU-Pro depth 1": [1, 2, 64.0, 65.0, 0.475, 0.390, 0.289, 0.296],
+    "AQuA-RAT depth 3": [0, "all", 81.1, 68.5, 1.000, 0.626, 0.000, 0.195]
+  },
+  "verifier_candidate_ablation_aqua": {
+    "_note": "Same ratio-zero AQuA-RAT checkpoint (delegates on every example); only the current_solution argument to the Verifier is blanked.",
+    "accuracy": {"with_candidate": 81.1, "without_candidate": 74.0},
+    "correction": {"with_candidate": 0.480, "without_candidate": 0.409},
+    "corruption": {"with_candidate": 0.0240, "without_candidate": 0.0236}
+  },
+  "table10_grpo_continuations": {
+    "_note": "Appendix D. Terminal binary correctness reward, no call penalty, started from selective SFT checkpoints. Accuracy records missing from the exported record.",
+    "MedQA, 8B manager": {"calls": 2.98, "behavior": "approaches all three calls"},
+    "MedQA, 9B manager": {"calls": 3.00, "behavior": "all three calls; solution emitted late"}
+  },
+  "medqa_three_seed_sft": {"accuracy_mean": 80.5, "accuracy_sd": 1.0, "calls_mean": 0.517, "calls_sd": 0.043}
+}

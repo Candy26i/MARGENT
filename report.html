@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>阶段实验报告</title>
+<meta name="description" content="MARGENT（度量智能体系统中委派的边际价值）的中文阶段实验报告：论文方法、结果、附录诊断、代码与数据现状、风险与下一阶段计划。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap">
+<link rel="stylesheet" href="static/css/style.css">
+<link rel="icon" href="data:,">
+<style>
+  /* page-specific: hero meta line, evidence-source tags, labelled check list, KPI grid */
+  .hero .meta { color: var(--muted); font-size: 0.9rem; margin: 0.2rem 0; }
+  .tag { display: inline-block; padding: 0.1em 0.6em; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; vertical-align: middle; margin-left: 0.4rem; }
+  .tag.lock { background: var(--accent-soft); color: var(--accent); }
+  .tag.dev { background: #f1f2f4; color: var(--fg-soft); }
+  .tag.coll { background: #eef7f1; color: #146c43; }
+  .checks { list-style: none; padding-left: 0; }
+  .checks li { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.5rem; }
+  .checks .status { flex: none; margin-top: 0.2em; }
+  #summary .cards { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }
+  #code td:first-child, #risks td:first-child { white-space: normal; }
+  figure.narrow img { max-width: min(620px, 100%); }
+  .eq { font-family: var(--font-mono); font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<!-- ===== top navigation ===== -->
+<nav class="topnav" aria-label="Site">
+  <div class="container">
+    <a class="brand" href="index.html">MARGENT</a>
+    <ul>
+      <li><a href="index.html">Project page</a></li>
+      <li><a href="report.html" class="active">实验报告 (Report)</a></li>
+      <li><a href="https://github.com/Candy26i/MARGENT">Code</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== floating table of contents ===== -->
+<aside class="toc" aria-label="目录">
+  <h4>目录</h4>
+  <ul>
+    <li><a href="#summary">1. 摘要</a></li>
+    <li><a href="#paper">2. 论文方法概述</a></li>
+    <li><a href="#setup">3. 实验设置</a></li>
+    <li><a href="#results">4. 论文结果</a></li>
+    <li><a href="#diagnostics">5. 附录诊断</a></li>
+    <li><a href="#code">6. 代码与数据现状</a></li>
+    <li><a href="#risks">7. 局限与风险</a></li>
+    <li><a href="#plan">8. 下一阶段计划</a></li>
+    <li><a href="#todo">9. 待确认</a></li>
+    <li><a href="#appendix">附录</a></li>
+  </ul>
+</aside>
+
+<!-- ===== hero ===== -->
+<header class="hero">
+  <div class="container">
+    <h1 class="title">阶段实验报告</h1>
+    <p class="subtitle">MARGENT：度量智能体系统中委派的边际价值</p>
+    <p class="meta">报告日期 2026-10-06 · 论文：NeurIPS 2026 投稿稿 · 代码快照 <code>7.98/agent_routing</code> → 整理版 <code>supplementary_code/</code></p>
+    <p class="note">面向 10 分钟阅读：§1 可以单独读完。每个结果都标明来源：<span class="tag coll">采集集</span>＝训练题上强制展开的分支，用标准答案打分；<span class="tag dev">开发集诊断</span>＝开发池上按验证集选出的操作点；<span class="tag lock">不相交评测</span>＝与采集集不相交的评测。其中 MedQA、MMLU-Pro、AQuA-RAT 是固定 checkpoint 后只跑一次的锁定评测；GPQA-Diamond 100 同时是它的开发池。所有数字来自论文正文、<code>static/data/paper_tables.json</code> 或快照里的结果文件。</p>
+    <div class="links">
+      <a class="btn" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></svg>
+        <span>Project page</span>
+      </a>
+      <a class="btn" href="https://github.com/Candy26i/MARGENT">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        <span>Code</span>
+      </a>
+      <a class="btn" href="static/data/paper_tables.json">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zm1.5 1.5v3h15v-3zm0 4.5v3h15v-3zm0 4.5v3h15v-3z"/></svg>
+        <span>论文数据 (JSON)</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ===== 1. 摘要 ===== -->
+<section class="section" id="summary">
+  <div class="container">
+    <h2>1. 摘要</h2>
+    <div class="prose">
+      <p class="lead"><b>一句话结论：</b>另一个智能体值不值得调用，取决于它能否把当前这个候选答案从错改对。按这个边际价值来度量和学习委派，一次选对的调用就能拿到大部分可测得的增益，学到的策略每题只用约半次调用。</p>
+      <p>系统里有一个可训练的 manager（Qwen3.5-9B）和三个冻结的子智能体（Extractor、Reasoner、Verifier，代码中叫 advisor）。每一轮 manager 先写下候选答案（代码中的 <code>DRAFT_ANSWER</code>），然后二选一：提交，或者委派给一个还没用过的子智能体。子智能体只返回结构化信号，不给答案。只有 manager 被微调。</p>
+      <p>MARGENT 分两步。采集：从 manager 自己生成的同一个推理状态出发，分别强制「提交」和「委派给每个子智能体」，比较最终答案的对错，得到每次委派的边际价值。蒸馏：把最短的成功路径变成 manager 的监督数据。</p>
+      <p>结果：四个推理 benchmark 上，选对的一次委派平均拿到可测得 oracle（事后最优）增益的 91.7%。在与采集集不相交的评测上，学到的策略比自己委派前的候选答案高 17.1 pp，每题只调用 0.53 次。</p>
+      <p class="small"><span class="todo">待确认</span> 表示现有文件无法确定、需要作者补充的事实。</p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="kpi">91.7%</div><div class="kpi-label">Gain@1 宏平均（论文表 1）</div><p>最好的一次委派占「直接提交 → 测得 oracle（事后最优）」全部增益的比例。采集集。</p></div>
+      <div class="card"><div class="kpi pos">+17.1 pp</div><div class="kpi-label">相对候选答案（论文表 3）</div><p>四个与采集集不相交的评测，宏平均 50.6% → 67.7%。其中 MedQA、MMLU-Pro、AQuA-RAT 为锁定评测；GPQA-Diamond 100 同时是它的开发池。</p></div>
+      <div class="card"><div class="kpi">0.53</div><div class="kpi-label">次调用 / 题（论文表 3）</div><p>同样四个评测上的平均子智能体调用次数（宏平均 0.526）。</p></div>
+      <div class="card"><div class="kpi">71.5%</div><div class="kpi-label">MMLU-Pro：1.07 次 = 3 次（论文表 5）</div><p>一次选择性调用与强制三次调用准确率相同。开发集诊断。</p></div>
+      <div class="card"><div class="kpi">81.1 vs 75.2</div><div class="kpi-label">AQuA-RAT：选择性 vs 强制全部（论文表 5）</div><p>1.03 次调用高于 3 次强制调用 5.9 pp。开发集诊断。</p></div>
+      <div class="card"><div class="kpi neg">2.98–3.00</div><div class="kpi-label">GRPO 继续训练的调用次数（论文表 10）</div><p>对照诊断，不是 MARGENT 的方法。从 MARGENT 的 SFT checkpoint 出发，只用结果奖励、无调用惩罚继续训练，策略退化为几乎每题三次调用。两次运行没有准确率记录。附录 D。</p></div>
+    </div>
+
+    <div class="prose">
+      <h3>五条关键发现（论文的）</h3>
+      <ol>
+        <li><b>可回收的价值集中在第一次选对的委派。</b>Gain@1 在三个任务上超过 90%，宏平均 91.7%。第二次调用只多 0.5–4.5 分；在两个深度 3 的采集集上，第三次调用增加恰好为零。<span class="tag coll">采集集</span></li>
+        <li><b>一次调用的价值取决于调用谁。</b>净边际价值 = 救回比例减损坏比例。同一个 Reasoner 在 MedQA 是 +6.8 pp，在 AQuA-RAT 是 −4.3 pp。Extractor 在四个任务上都接近零或为负。Verifier 均值最大，但不能替代其他角色：12 道 MedQA 和 9 道 MMLU-Pro 题被 Reasoner 救回而 Verifier 救不回。<span class="tag coll">采集集</span></li>
+        <li><b>学到的策略在四个与采集集不相交的评测上都高于自己的候选答案</b>：宏平均 +17.1 pp，0.526 次调用 / 题。其中 GPQA-Diamond 100 同时是它的开发池，不是独立的锁定集。论文自己的限定：这是同一 scaffold（带子智能体工具的推理框架）内的端到端差异，不是相对独立单模型基线的增益。<span class="tag lock">不相交评测</span></li>
+        <li><b>约一次选择性调用 ≈ 三次强制调用。</b>操作点 = 一个训练好的 checkpoint 在开发池上得到的「调用次数、准确率」这一对数字。选出的操作点宏平均 73.2%@1.03 次，强制全部三个子智能体 73.6%@3.0 次。MMLU-Pro 持平（71.5%），AQuA-RAT 反超（81.1% vs 75.2%），GPQA 仍落后 6.0 pp。<span class="tag dev">开发集诊断</span></li>
+        <li><b>候选答案本身对委派有用；只看结果的 RL 会学成「全都调用」。</b>AQuA-RAT 上只把传给 Verifier 的候选答案置空，准确率 81.1% → 74.0%。<span class="tag dev">开发集诊断</span> 反过来，从 MARGENT 的 SFT checkpoint（论文只称其为「选择性 SFT」checkpoint，没有进一步说明；按本快照 results/README.md，8B 运行是从同状态采集蒸馏出的 SFT 继续训练）出发、只用终端正确性奖励的 GRPO 继续训练，8B 与 9B 分别走到 2.98 和 3.00 次调用 / 题。这两次运行没有准确率记录，所以只能说明调用行为，不能说明准确率损失。附录 D 诊断；论文只说明是 MedQA，没有给出评测切分和题数。</li>
+      </ol>
+      <h3>本阶段产出</h3>
+      <ul>
+        <li><b>论文投稿：</b>NeurIPS 2026 投稿稿《MARGENT: Measuring the Marginal Value of Delegation in Agentic Systems》，匿名；前 12 页为正文、参考文献和附录 A–E，其余为 checklist。</li>
+        <li><b>代码整理：</b><code>supplementary_code/</code>。README 按论文重写并附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 加范围说明（GRPO 只是诊断）；论文图 1 入库。清理细节见 §6。</li>
+        <li><b>页面：</b>英文项目页 <code>index.html</code>、本报告、<code>static/data/paper_tables.json</code>（论文全部表格的转录，是页面图表的数据来源）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 2. 论文方法概述 ===== -->
+<section class="section" id="paper">
+  <div class="container">
+    <h2>2. 论文方法概述</h2>
+    <div class="prose">
+      <h3>2.1 问题</h3>
+      <p>多智能体系统靠多次交互换准确率。但每次交互都要额外计算，还会引入新的失败路径：子智能体可能重复已有工作、给出不一致的证据，或者把一个正确答案改错。现有的选择性方法大多按问题特征、团队结构或模型置信度来决定要不要交互。这些信号不直接比较「从当前推理状态出发，提交和委派各自会得到什么结果」。低置信度的答案未必有谁能修好，高置信度的答案也可能含有别人能查出的错。论文要回答的问题是：<b>什么时候再加一份智能是值得的？</b></p>
+
+      <h3>2.2 决策接口</h3>
+      <p>第 <span class="eq">t</span> 轮的状态是 <span class="eq">s_t = (x, h_t, ŷ_t, U_t)</span>：问题、交互历史、manager 当前的候选答案、已经用过的子智能体集合。动作空间是</p>
+      <p class="eq">u_t ∈ {commit} ∪ {delegate(a) : a ∈ A \ U_t}。（论文式 1）</p>
+      <p>提交就结束，<span class="eq">ŷ_t</span> 成为最终答案。委派把子智能体的输出加进历史，manager 修订候选答案，再决定一次。每个子智能体最多调用一次，所以一条轨迹最多 3 次委派。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R1. 三个子智能体。它们都冻结、贪心解码，只返回结构化的决策信号，不返回选项或答案；修订候选答案和最终提交都由 manager 负责。</caption>
+        <thead><tr><th>子智能体</th><th>返回什么</th><th>接收什么</th></tr></thead>
+        <tbody>
+          <tr><td>Extractor</td><td>与决策相关的事实及其极性</td><td>问题与上下文</td></tr>
+          <tr><td>Reasoner</td><td>问题分解、缺失的推理步骤</td><td>问题与上下文</td></tr>
+          <tr><td>Verifier</td><td>对当前候选答案的审计</td><td>问题与上下文，加上 manager 当前的候选答案</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>两个实现细节。子智能体输出有缓存，缓存键包含完整输入，所以 Verifier 对不同候选答案的审计不会串用。子智能体的训练数据由教师模型合成，经过 schema 校验和答案泄漏检查。</p>
+
+      <h3>2.3 边际价值的定义</h3>
+      <p>令 <span class="eq">C(s_t, commit) ∈ {0,1}</span> 表示直接提交当前候选答案是否正确。一步委派探针：强制 manager 委派给 <span class="eq">a</span>，把它的输出给 manager，再强制 manager 修订并提交，不再委派；记这条分支的正确性为 <span class="eq">C(s_t, delegate(a))</span>。于是</p>
+      <p class="eq">Δ(s_t, a) = C(s_t, delegate(a)) − C(s_t, commit) ∈ {−1, 0, +1}。（论文式 2）</p>
+      <p>+1 是救回，0 是没变，−1 是损坏。边际价值同时取决于当前状态和被调用的子智能体，而不只是问题或子智能体本身。它度量的是「调用、修订、提交」整个操作在固定修订协议下的效果，不是子智能体能力的内在度量。</p>
+
+      <h3>2.4 同状态干预采集</h3>
+      <ul>
+        <li>每道训练题先由温度 0 的 manager 不委派地生成根候选答案。从这个共同的根状态，采集器强制「直接提交」和「委派给每个可用子智能体」。</li>
+        <li>按广度优先枚举不重复子智能体的有序序列，最大深度 <span class="eq">D ≤ 3</span>。三个子智能体一共 16 个有序序列（含直接提交）。</li>
+        <li>根候选答案错误：评估完当前深度的所有序列；只要这一层有成功，就停止，并保留所有等长的成功序列。整层都失败则继续到下一层，直到深度 <span class="eq">D</span>。</li>
+        <li>根候选答案正确：只评估一步委派，因为直接提交已经是最短成功轨迹；这些分支留作损坏分析。</li>
+        <li>标准答案只用来给终端分支打分，从不展示给 manager 或子智能体。</li>
+      </ul>
+      <p>根状态由 manager 自己生成，后代状态来自强制干预。这样比较的是同一个 manager 状态下的不同动作，包括当前策略本来不会选的动作，避免只在「策略已经委派的那些题」上估计子智能体的价值。式 2 只度量一步委派后立即提交的效果；一个第一步 Δ = 0 的动作仍可能是成功两步序列的开头，这类动作由下面的序列准则选中，而不是由一步 Δ 选中。</p>
+
+      <h3>2.5 边际价值蒸馏</h3>
+      <p>令 <span class="eq">Σ(s)</span> 为已评估的委派序列集合（含空序列 ε），<span class="eq">c_σ</span> 为序列 σ 的最终正确性。最短成功序列集合 <span class="eq">Σ*(s)</span>（论文式 3）：</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R2. 蒸馏规则：三种根状态各给出什么监督目标。</caption>
+        <thead><tr><th>根候选答案</th><th>采集到的分支</th><th>蒸馏目标</th></tr></thead>
+        <tbody>
+          <tr><td>正确</td><td>只展开一步，用于损坏分析</td><td>直接提交（<span class="eq">Σ* = {ε}</span>）</td></tr>
+          <tr><td>错误，在深度 <span class="eq">d</span> 首次出现成功（<span class="eq">d</span> = 1、2 或 3）</td><td>停在深度 <span class="eq">d</span>，保留该层所有成功序列</td><td>从这些最短成功序列中按该题固定的种子均匀抽一条（论文式 4）：<span class="eq">d</span> 次调用后提交。本报告 §4.1（论文表 1）的 Gain@1 显示绝大部分救回出现在深度 1</td></tr>
+          <tr><td>错误，到深度 <span class="eq">D</span> 都没有成功</td><td>所有层都评估完</td><td>无标签（<span class="eq">Σ* = ∅</span>）：既不教提交，也不教委派</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>每条选中的轨迹在经过的每个状态上产生一个监督决策，最后是提交目标。为了不让「根已经正确」的题占满训练集，提交轨迹的数量被限制在救回轨迹数量的 ρ 倍以内；这个上限 ρ 就是提交/救回比，是数据构造超参数，第 4 节扫描它。SFT 更新完整的 manager，所以它既改动作选择，也改调用后的修订；候选答案到最终答案的增益是端到端的，不只是路由效应。分支在 SFT 前采集，SFT 后不重新采集。</p>
+      <h3>2.6 为什么不用每次调用惩罚</h3>
+      <p>终端正确性奖励分不清「直接提交」和「多余的委派」，两条路都对时它们得分一样。每次调用惩罚则引入一个随任务变化的准确率与资源之间的汇率。MARGENT 改用字典序偏好：先看正确，正确的里面再看调用少；不需要给正确性和调用次数定一个数值换算率。ρ 仍然控制保留多少直接提交的监督。</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/margent_overview.png" alt="MARGENT 总览图。左：从 manager 生成的同一状态出发，分别评估提交和每个委派，然后把最短成功轨迹蒸馏成 manager 的 SFT 数据。右：推理时学到的 manager 提交或委派给一个未用过的冻结子智能体，用结构化信号更新候选答案，再决定一次。" width="1800" height="1012">
+        <figcaption><b>图 1.</b> MARGENT 总览（论文图 1）。左：从 manager 生成的同一个状态出发，评估提交和每个可用的委派，然后蒸馏一条最短的测得成功轨迹用于 manager SFT。右：推理时，学到的 manager 提交，或委派给一个未用过的冻结子智能体，用返回的结构化信号更新候选答案，再决定一次。</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 3. 实验设置 ===== -->
+<section class="section" id="setup">
+  <div class="container">
+    <h2>3. 实验设置</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R3. 实验设置（论文 §4.1 与附录 A）。</caption>
+        <thead><tr><th>项目</th><th>设置</th></tr></thead>
+        <tbody>
+          <tr><td>Benchmark</td><td>MedQA（医学）、MMLU-Pro（广泛知识）、GPQA（科学）、AQuA-RAT（数学），都是多选题</td></tr>
+          <tr><td>采集集规模</td><td>每个任务 400 个根状态，GPQA 200 个</td></tr>
+          <tr><td>开发池（策略开发）</td><td>MedQA 200、MMLU-Pro 200、AQuA-RAT 254、GPQA 100</td></tr>
+          <tr><td>锁定评测</td><td>固定深度、ρ 和 checkpoint 之后只跑一次：MedQA 500、MMLU-Pro 500、AQuA-RAT 254。GPQA 没有单独的锁定集：GPQA-Diamond 100 与它的 446 题采集池不相交，但就是上一行的 GPQA 开发池（论文称诊断池）</td></tr>
+          <tr><td>Manager</td><td>Qwen3.5-9B</td></tr>
+          <tr><td>子智能体</td><td>同一模型系列上的三个冻结的角色 LoRA</td></tr>
+          <tr><td>解码</td><td>干预探针和子智能体调用都用贪心解码</td></tr>
+          <tr><td>搜索深度</td><td>MedQA、AQuA-RAT 深度 3；MMLU-Pro、GPQA 主采集深度 2</td></tr>
+          <tr><td>提交/救回比 ρ</td><td>在有记录的地方扫描 {0, 0.5, 1, 2, 3}。ρ = 0 只保留救回状态，这时策略几乎每题都委派；ρ 越大，保留的「直接提交已正确」的状态越多</td></tr>
+          <tr><td>锁定 checkpoint</td><td>MedQA <code>sft_3.0_s1</code>（取离复现配置均值最近的种子，不是最好的种子，论文附录 A）、AQuA-RAT <code>sft_1.0</code>、MMLU-Pro <code>sft_2.0</code>、GPQA <code>sft_2.0</code></td></tr>
+          <tr><td>无法救回的根状态</td><td>MedQA 31/400、AQuA-RAT 51/400、MMLU-Pro 106/400、GPQA 61/200；它们不产生路由标签</td></tr>
+          <tr><td>缺失的元数据</td><td>导出的实验记录里没有优化器、硬件、token 和延迟信息，所以资源只按子智能体调用次数计</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>比较对象与指标</h3>
+      <ul>
+        <li>(i) 同一个 manager 在任何委派之前的候选答案；(ii) 强制调用一次 Verifier；(iii) 强制调用全部三个子智能体（按记录的 scaffold 顺序，没有单独的顺序扫描）；(iv) 测得的 oracle：每题选已评估序列中最好的一条。</li>
+        <li>指标：exact-match 多选准确率；平均子智能体调用次数；从配对结果算出的救回 / 纠正概率和损坏概率。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 4. 论文结果 ===== -->
+<section class="section" id="results">
+  <div class="container">
+    <h2>4. 论文结果</h2>
+    <div class="prose">
+      <p>按论文 §4.2–4.5 的顺序。每个小节标明数据来源：<span class="tag coll">采集集</span>是训练题上的强制分支；<span class="tag dev">开发集诊断</span>是在开发池上、按验证集选出的操作点，论文明确说它们不是额外的留出测试；<span class="tag lock">不相交评测</span>是与采集集不相交的评测：MedQA、MMLU-Pro、AQuA-RAT 在固定 checkpoint 后只跑一次（锁定评测），GPQA-Diamond 100 同时是它的开发池。</p>
+    </div>
+
+    <h3 id="results-oracle">4.1 一次委派之后还有多少价值可拿？<span class="tag coll">采集集</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_oracle_depth.svg" alt="四个任务各三根柱：直接提交 A0、最好的一次调用 A1、测得的最好 A_D，柱上标数值，组上方标 Gain@1。">
+        <figcaption><b>图 2.</b> 按最大委派深度的测得 oracle 准确率（论文表 1）。每组三根柱：直接提交 A<sub>0</sub>、最好的一次调用 A<sub>1</sub>、深度上限内测得的最好 A<sub>D</sub>；组上方是 Gain@1 = (A<sub>1</sub> − A<sub>0</sub>) / (A<sub>D</sub> − A<sub>0</sub>)。看点：每组的 A<sub>1</sub> 柱几乎追平 A<sub>D</sub> 柱，所以 Gain@1 在三个任务上超过 90%；GPQA 的 A<sub>1</sub> 与 A<sub>D</sub> 相差最大（4.5 分）。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 1. 按最大委派深度的测得 oracle 准确率（%）。每行来自同一个采集集，深度之间不混用运行。</caption>
+        <thead><tr><th>任务</th><th class="num">n</th><th class="num">直接提交 A<sub>0</sub></th><th class="num">最好一次调用 A<sub>1</sub></th><th class="num">测得最好 A<sub>D</sub></th><th class="num">Gain@1</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">400</td><td class="num">76.00</td><td class="num">91.75</td><td class="num">92.25</td><td class="num">96.9%</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">400</td><td class="num">54.25</td><td class="num">85.75</td><td class="num">87.25</td><td class="num">95.5%</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">400</td><td class="num">53.25</td><td class="num">71.75</td><td class="num">73.50</td><td class="num">91.4%</td></tr>
+          <tr><td>GPQA</td><td class="num">200</td><td class="num">43.00</td><td class="num">65.00</td><td class="num">69.50</td><td class="num">83.0%</td></tr>
+          <tr class="hl"><td>宏平均</td><td class="num">–</td><td class="num">56.63</td><td class="num">78.56</td><td class="num">80.63</td><td class="num">91.7%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>可回收的价值集中在第一次选对的委派。一次调用在三个任务上拿回测得增益的 90% 以上，宏平均 91.7%。第二次调用只多 0.5–4.5 分；在两个评估到深度 3 的主采集集上，第三次调用恰好多 0 分。GPQA 是例外：它的第二次调用多 4.5 分，在一个深度 2 的配置里 16% 的题调用了不止一次。GPQA 也是直接提交准确率最接近随机的任务，所以这个例外符合同一规律：第一个答案越弱，第二份意见还能加的越多。</p>
+    </div>
+
+    <h3 id="results-roles">4.2 一次调用的价值取决于调用谁<span class="tag coll">采集集</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_net_marginal_value.svg" alt="四个任务乘三个子智能体的净边际价值矩阵，单位 pp，带零线；Verifier 列最大，Extractor 列接近零或为负。">
+        <figcaption><b>图 3.</b> 一次强制调用的净边际价值 100·Δ̄（pp，论文表 2），按任务与子智能体。正值表示救回多于损坏，负值反之。Verifier 在四个任务上都最大；Extractor 接近零或为负。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 2. 一次强制调用的净边际价值 100·Δ̄<sub>a</sub>（pp）。来自强制的一步分支。</caption>
+        <thead><tr><th>任务</th><th class="num">Extractor</th><th class="num">Reasoner</th><th class="num">Verifier</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num pos">+2.0</td><td class="num pos">+6.8</td><td class="num pos">+10.0</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num neg">−0.5</td><td class="num pos">+2.3</td><td class="num pos">+15.1</td></tr>
+          <tr><td>GPQA</td><td class="num pos">+0.5</td><td class="num pos">+4.1</td><td class="num pos">+15.5</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num neg">−4.5</td><td class="num neg">−4.3</td><td class="num pos">+29.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>范围很宽：同一个 Reasoner 在 MedQA 净值 +6.8，在 AQuA-RAT 是 −4.3；一个角色在一个任务上有用，在另一个任务上会直接损失准确率。Extractor 在四个任务上都接近零或为负。Verifier 均值最大，但不可替代：一步记录里有 12 道 MedQA 和 9 道 MMLU-Pro 题被 Reasoner 救回而 Verifier 救不回；而且对每道题都强制调用最强角色，仍会把调用花在已经正确的答案上。「总是调用 Verifier」是一条强的任务级规则，但表达不了状态级的「停下来」，也用不上少数需要其他角色的题。</p>
+      <p>另一个来自开发集的观察（不是采集集）：在较浅的 MMLU-Pro 和 GPQA 操作点上（论文只说 shallow，没有给出深度），学到的策略从不选择接近零价值的 Extractor。这说明蒸馏出的动作标签在推理时不看标准答案，也恢复了部分角色排序。</p>
+    </div>
+
+    <h3 id="results-disjoint">4.3 与采集集不相交的评测<span class="tag lock">不相交评测</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_disjoint_eval.svg" alt="每个任务一对柱：候选答案准确率与 MARGENT 最终准确率，标出增益；另一面板是每题调用次数 0.460、0.780、0.352、0.510。">
+        <figcaption><b>图 4.</b> 与采集集不相交的评测（论文表 3）。左：同一个训练后的 manager 在第一次委派之前的候选答案准确率 vs MARGENT 最终准确率，柱上标增益。右：每题平均子智能体调用次数。看点：四个任务的增益都为正；AQuA-RAT 增益最大（+39.4），但它的候选答案也最弱（37.4%），见下方限定。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 3. 与采集集不相交的评测。MedQA、MMLU-Pro、AQuA-RAT 用最终评测前固定的 checkpoint；GPQA-Diamond-100 与采集集不相交，但同时是它的开发池（论文称诊断池），不是锁定评测。「候选答案」是同一个 manager 在第一次委派前会提交的答案。</caption>
+        <thead><tr><th>任务</th><th class="num">n</th><th class="num">候选答案</th><th class="num">MARGENT</th><th class="num">增益 (pp)</th><th class="num">调用 / 题</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">500</td><td class="num">73.4</td><td class="num">79.8</td><td class="num pos">+6.4</td><td class="num">0.460</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">254</td><td class="num">37.4</td><td class="num">76.8</td><td class="num pos">+39.4</td><td class="num">0.780</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">500</td><td class="num">49.6</td><td class="num">60.2</td><td class="num pos">+10.6</td><td class="num">0.352</td></tr>
+          <tr><td>GPQA</td><td class="num">100</td><td class="num">42.0</td><td class="num">54.0</td><td class="num pos">+12.0</td><td class="num">0.510</td></tr>
+          <tr class="hl"><td>宏平均</td><td class="num">–</td><td class="num">50.6</td><td class="num">67.7</td><td class="num pos">+17.1</td><td class="num">0.526</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>四个评测上 MARGENT 的最终输出都比同一个训练后 manager 委派前的候选答案准确，宏平均高 17.1 pp，每题 0.53 次调用。</p>
+    </div>
+    <div class="callout warn">
+      <span class="label">论文自己的限定</span>
+      <p>因为 SFT 更新的是完整的 manager，这是同一 scaffold 内的端到端差异，不是只由路由造成的因果效应，也不应读成相对一个独立提示的单模型基线的增益。这一点在 AQuA-RAT 上尤其重要：带工具的 scaffold 给出的候选答案明显弱于单独的 plain-answer（直接作答）提示。</p>
+    </div>
+
+    <h3 id="results-calls">4.4 更少的调用，同样的准确率<span class="tag dev">开发集诊断</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_accuracy_vs_calls.svg" alt="四个任务各一面板，横轴每题调用次数 0 到 3.2，纵轴准确率：低调用 MARGENT、总是 Verifier（1 次）、选出的 MARGENT、强制全部（3 次）。">
+        <figcaption><b>图 5.</b> 准确率 vs 每题调用次数（论文表 4 与表 5，开发集诊断）。每个任务一个面板：低调用的 MARGENT 策略、总是调用 Verifier（1.0 次）、选出的 MARGENT 操作点、强制全部三个（3.0 次）。约一次选择性调用达到与三次强制调用相近的准确率；AQuA-RAT 上强制全部反而更差。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 4. 低调用的 MARGENT 策略 vs 对每题强制调用一次 Verifier。开发集诊断。MedQA 行是另外三个种子的均值（80.5 ± 1.0，0.517 ± 0.043 次），其余行是单次运行。</caption>
+        <thead><tr><th>任务</th><th class="num">MARGENT 准确率</th><th class="num">调用</th><th class="num">总是 Verifier 准确率</th><th class="num">调用</th><th class="num">少调用 (%)</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">80.5</td><td class="num">0.517</td><td class="num">84.5</td><td class="num">1.0</td><td class="num">48.3</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">64.5</td><td class="num">0.340</td><td class="num">67.0</td><td class="num">1.0</td><td class="num">66.0</td></tr>
+          <tr><td>GPQA</td><td class="num">54.0</td><td class="num">0.510</td><td class="num">55.0</td><td class="num">1.0</td><td class="num">49.0</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">78.0</td><td class="num">0.894</td><td class="num">76.8</td><td class="num">1.0</td><td class="num">10.6</td></tr>
+          <tr class="hl"><td>宏平均</td><td class="num">69.3</td><td class="num">0.565</td><td class="num">70.8</td><td class="num">1.0</td><td class="num">43.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>低调用的 MARGENT 策略比「每题强制调用一次 Verifier」少用 43.5% 的调用（宏平均 0.565 vs 1.00 次），准确率宏平均低约 1.6 分（论文正文数字；表中为 69.3% vs 70.8%）。拿 Verifier 做基线，是因为表 2 显示它是均值最强的角色，比「不调用」或「全调用」更有参考价值。MedQA 行用三种子均值，而不是更好看的那次 82.0%@0.405 运行。</p>
+    </div>
+    <div class="callout warn">
+      <span class="label">论文自己的限定</span>
+      <p>记录中的强制 Verifier 实现没有把同一个委派前的候选答案传给 Verifier。所以它是一个强的操作基线，不是完全匹配的路由消融。</p>
+    </div>
+    <div class="prose">
+      <p>表 5 换一组操作点。表 4 用的是低调用的 MARGENT 策略；表 5 用的是记录中准确率最好的操作点，调用约 1 次 / 题。两组都是 MARGENT 蒸馏出的 manager。论文没有说明两组操作点对应的 checkpoint 关系；数值上，表 5 的 MedQA 85.0%@1.000 与表 9 中 MedQA 深度 2、ρ = 0 的一端相同。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 5. 开发集操作点：同一个 manager 和子智能体池。这些是按验证集选出的诊断结果，不是额外的留出测试。</caption>
+        <thead><tr><th>任务</th><th class="num">选出的 MARGENT 准确率</th><th class="num">调用</th><th class="num">强制全部准确率</th><th class="num">调用</th><th class="num">Δ 准确率</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">85.0</td><td class="num">1.000</td><td class="num">86.5</td><td class="num">3.0</td><td class="num neg">−1.5</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">71.5</td><td class="num">1.065</td><td class="num">71.5</td><td class="num">3.0</td><td class="num">0.0</td></tr>
+          <tr><td>GPQA</td><td class="num">55.0</td><td class="num">1.040</td><td class="num">61.0</td><td class="num">3.0</td><td class="num neg">−6.0</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">81.1</td><td class="num">1.031</td><td class="num">75.2</td><td class="num">3.0</td><td class="num pos">+5.9</td></tr>
+          <tr class="hl"><td>宏平均</td><td class="num">73.2</td><td class="num">1.034</td><td class="num">73.6</td><td class="num">3.0</td><td class="num neg">−0.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>在每题约一次选择性调用的操作点上，MARGENT 与强制调用全部三个子智能体基本持平。最好的记录操作点宏平均 73.2%、1.03 次调用；强制全部 73.6%、3.0 次调用。调用减到三分之一，准确率只低 0.4 分。差距集中在 GPQA：强制全部高 6.0 分；MedQA 上强制全部高 1.5 分。MMLU-Pro 是最干净的效率结果：1.07 次选择性调用与三次强制调用都是 71.5%。AQuA-RAT 说明调用更多可能有害：1.03 次选择性调用 81.1%，强制全部 75.2%。</p>
+      <h4>学到的策略下的救回与损坏</h4>
+      <p>术语：采集集上的「救回」和学到的策略下的「纠正」是同一件事，都指候选答案错、最终答案对；「损坏」指候选答案对、最终答案错。</p>
+    </div>
+    <div class="box">
+      <figure class="narrow">
+        <img src="static/images/fig_correction_corruption.svg" alt="每个任务一对横条：纠正比例与损坏比例，都是全部题目中的比例；AQuA-RAT 纠正 0.480、损坏 0.024。">
+        <figcaption><b>图 6.</b> 高调用操作点上的纠正与损坏（论文表 8，开发集诊断）。两者都是全部题目中的无条件比例。AQuA-RAT 的纠正与损坏之比约为 20:1。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 8. 记录中的高调用 MARGENT 操作点的结果分解。纠正 = 候选答案错、最终对；损坏 = 候选答案对、最终错。都是全部题目中的比例，不是「被调用的题」中的条件比例。</caption>
+        <thead><tr><th>任务</th><th class="num">调用 / 题</th><th class="num">纠正</th><th class="num">损坏</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">1.000</td><td class="num pos">0.210</td><td class="num neg">0.035</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">1.065</td><td class="num pos">0.250</td><td class="num neg">0.045</td></tr>
+          <tr><td>GPQA</td><td class="num">1.110</td><td class="num pos">0.190</td><td class="num neg">0.040</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">1.031</td><td class="num pos">0.480</td><td class="num neg">0.024</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>只看准确率会掩盖委派的两个相反效果。每个策略的净值都为正，但比例差别很大：AQuA-RAT 纠正了 48.0% 的题、损坏 2.4%，二十比一；GPQA 纠正 19.0%、损坏 4.0%。这解释了为什么高 oracle 不能单独证明「全都调用」是对的：oracle 只保留成功分支，而可执行的策略要承担自己的错误。</p>
+    </div>
+
+    <h3 id="results-states">4.5 策略是否在正确的状态上调用？<span class="tag dev">开发集诊断</span></h3>
+    <div class="prose">
+      <p>调用差只用于分析，需要标准答案：P(委派 | 候选答案错) − P(委派 | 候选答案对)。在选出的开发集操作点上，四个任务的调用差都为正：MedQA 0.381、MMLU-Pro 0.296、GPQA 0.067、AQuA-RAT 0.102。GPQA 的小调用差与它较弱的策略结果一致：候选答案难以区分时，manager 接近无差别调用。调用差为正本身不能证明策略预测了「某个具体子智能体」的边际价值。</p>
+      <p>更严格的检验是匹配预算重放：固定调用的角色和调用次数，把题目随机重抽 2,000 次，得到随机选择下的 95% 区间；再看策略自己选中的那批题的准确率是否高于这个区间。MedQA 上策略选中的子集达到 82.0%，高于随机区间 [75.0, 81.0]；MMLU-Pro（59.5% vs [54.0, 60.5]）和 GPQA（51.0% vs [44.0, 53.0]）在区间内。「优于随机选择」的证据最强在 MedQA；这个检验分不开「用了候选答案」和「题目难度」两种解释。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 7（附录 C）. 代表性开发集操作点上的候选答案准确率、相对随机猜测的余量（候选答案准确率 − 1/K）和调用差。论文称这些为「代表性」开发集操作点；它们的调用差（0.291 / 0.225 / 0.152 / 0.017）与正文「选出的操作点」的调用差（0.381 / 0.296 / 0.102 / 0.067）不同，论文未说明两组操作点的对应关系。</caption>
+        <thead><tr><th>任务</th><th class="num">选项数 K</th><th class="num">候选答案</th><th class="num">余量</th><th class="num">调用差</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num">4</td><td class="num">0.685</td><td class="num">0.435</td><td class="num">0.291</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num">10</td><td class="num">0.560</td><td class="num">0.460</td><td class="num">0.225</td></tr>
+          <tr><td>AQuA-RAT</td><td class="num">5</td><td class="num">0.390</td><td class="num">0.190</td><td class="num">0.152</td></tr>
+          <tr><td>GPQA</td><td class="num">4</td><td class="num">0.420</td><td class="num">0.170</td><td class="num">0.017</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>这张表不确立候选答案准确率与选择性之间的因果关系。它记录的是一个实际的失败边界：GPQA 的候选答案只比随机高 17 分，策略的调用差在数值上接近无差别调用，而且样本太小，分辨不出小的差别。按这些代表性操作点看，调用差在 GPQA（0.017）和 AQuA-RAT（0.152）最小，在 MMLU-Pro（0.225）和 MedQA（0.291）较大。这是描述性规律：候选答案接近随机时，选择性调用更难。</p>
+    </div>
+
+    <h3 id="results-rho">4.6 提交样本控制「调用 / 停止」的权衡<span class="tag dev">开发集诊断</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_rho_sweep.svg" alt="在调用次数与准确率平面上的四支箭头，各自从 ρ_from 指向 ρ_to，标出 ρ 值和调用差变化；调用次数都下降，准确率有升有降。">
+        <figcaption><b>图 7.</b> 只改 ρ 的受控比较（论文表 9，开发集诊断）。每支箭头从 ρ<sub>from</sub> 指向 ρ<sub>to</sub>，横轴每题调用次数，纵轴准确率，旁边标出调用差的变化。保留更多提交样本在每一对里都降低调用次数；准确率不单调。</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 9. 开发集上的受控提交/救回比比较。「all」表示保留全部可用的提交样本。每一行只改 ρ，采集集和训练配方固定。</caption>
+        <thead><tr><th>任务 / 采集集</th><th class="num">ρ</th><th class="num">准确率</th><th class="num">调用 / 题</th><th class="num">调用差</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA 深度 2</td><td class="num">0 → 3</td><td class="num">85.0 → 82.0</td><td class="num">1.000 → 0.405</td><td class="num">.000 → .474</td></tr>
+          <tr><td>MedQA 深度 1</td><td class="num">1 → 2</td><td class="num">80.5 → 82.5</td><td class="num">.700 → .560</td><td class="num">.299 → .381</td></tr>
+          <tr><td>MMLU-Pro 深度 1</td><td class="num">1 → 2</td><td class="num">64.0 → 65.0</td><td class="num">.475 → .390</td><td class="num">.289 → .296</td></tr>
+          <tr><td>AQuA-RAT 深度 3</td><td class="num">0 → all</td><td class="num">81.1 → 68.5</td><td class="num">1.000 → .626</td><td class="num">.000 → .195</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>ρ 是每一对里唯一改变的数据构造变量。保留更多提交样本在每一对里都降低调用率；调用差通常同时上升，也就是剩下的调用更集中在错误的候选答案上；但准确率不单调。激进的 AQuA-RAT 比较去掉了 37.4% 的调用，也丢了 12.6 分。所以 ρ 是对策略行为的透明控制，不是免费的效率提升。</p>
+    </div>
+
+    <h3 id="results-candidate">4.7 候选答案对委派的调用重要吗？<span class="tag dev">开发集诊断</span></h3>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R4. AQuA-RAT 上的 Verifier 候选答案消融（论文 §4.5）。同一个 ρ = 0 的 checkpoint，它对每道题都委派；不重训、不改调用预算，只把传给 Verifier 的 <code>current_solution</code> 参数置空。</caption>
+        <thead><tr><th>指标</th><th class="num">传入候选答案</th><th class="num">置空候选答案</th></tr></thead>
+        <tbody>
+          <tr><td>准确率 (%)</td><td class="num">81.1</td><td class="num">74.0</td></tr>
+          <tr><td>纠正（全部题目中的比例）</td><td class="num">0.480</td><td class="num">0.409</td></tr>
+          <tr><td>损坏（全部题目中的比例）</td><td class="num">0.0240</td><td class="num">0.0236</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>核心机制预测：子智能体的价值可能取决于它收到的答案，而不只是问题。去掉候选答案后准确率从 81.1% 降到 74.0%，纠正从 0.480 降到 0.409，损坏基本不变。所以候选答案是委派计算的有用审计对象。论文的限定：这次运行的路由是固定的，所以这个干预本身不能说明路由器用候选答案来决定要不要调用。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 5. 附录诊断 ===== -->
+<section class="section" id="diagnostics">
+  <div class="container">
+    <h2>5. 附录诊断</h2>
+    <div class="callout">
+      <span class="label">范围</span>
+      <p>本节的两组结果来自论文附录 B 和 D。它们是动机性诊断，不是主结果：GRPO 不是论文的方法；4B/8B/9B 的表格是在边际价值实验之前做的前期实验。本快照保存的结果文件只覆盖这两组诊断，不包含论文表 1–5 的 9B 主实验记录。</p>
+    </div>
+
+    <h3 id="diag-grpo">5.1 只用结果奖励的 GRPO 退化到三次调用（附录 D）</h3>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 10. 记录中的 GRPO 继续训练：终端二值正确性奖励，无调用惩罚，都从 MARGENT 的 SFT checkpoint（论文称「选择性 SFT」）出发。两次运行的准确率在导出的实验记录中缺失，论文不做填补。所以附录 D 只支持关于调用行为的结论，不支持关于准确率损失的结论。</caption>
+        <thead><tr><th>运行</th><th class="num">调用 / 题</th><th class="num">准确率</th><th>观察到的行为</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA，8B manager</td><td class="num">2.98</td><td class="num">–</td><td>接近全部三次调用</td></tr>
+          <tr><td>MedQA，9B manager</td><td class="num">3.00</td><td class="num">–</td><td>全部三次调用；答案很晚才给出</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>作为参照，一个固定的 MedQA MARGENT SFT 配置另外三个种子的结果是 80.5 ± 1.0 准确率、0.517 ± 0.043 次调用（均值 ± 标准差）。论文附录 A 说锁定 checkpoint <code>sft_3.0_s1</code> 取的是离「复现配置」均值最近的种子；论文没有说明这个复现配置是否就是上述三种子配置，也没有说 GRPO 继续训练是否从它出发。其余任务级比较都是单次运行。</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_grpo_collapse.svg" alt="左：8B 与 9B GRPO 继续训练的每题调用次数 2.98 与 3.00，参考线 0.517 与 0.526。右：快照中 8B 轨迹的调用次数分布，dev 200 题全部 3 次，test 198 题 3 次。">
+        <figcaption><b>图 8.</b> 左：GRPO 继续训练的每题调用次数（论文表 10），参考线为 MARGENT SFT 的 MedQA 三种子均值 0.517 ± 0.043 和与采集集不相交的评测的宏平均 0.526（论文表 3）。右：本快照保存的 8B GRPO 运行（对应附录 D 的 8B 行，checkpoint 身份见 §9）的调用次数分布，dev {3: 200}，test {1: 1, 2: 1, 3: 198}。</figcaption>
+      </figure>
+    </div>
+    <h4>本快照中保存的 8B 轨迹（<code>results/medqa_marginal_v1/</code>）</h4>
+    <div class="prose">
+      <p><code>results/README.md</code> 把这组文件对应到附录 D 的「MedQA，8B manager」运行：Qwen3-8B manager，先做深度 1 的同状态干预采集，再从中蒸馏，然后用只看结果的 GRPO 继续训练（checkpoint 目录 <code>grpo_binary_mv2</code>）。test 的 2.985 次调用与表 10 的 2.98 一致；是否为同一个 checkpoint 仍待作者确认（§9）。它不是正文报告的 MARGENT SFT 策略。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R5. GRPO 继续训练后的 8B manager 在 MedQA 官方 dev 和 test 前 200 题上的评测（<code>eval_dev200_report.json</code>、<code>eval_test200_report.json</code>；区间与 p 值由 <code>scripts/analyze_results.py</code> 算出）。</caption>
+        <thead><tr><th>指标</th><th class="num">Dev（n = 200）</th><th class="num">Test（n = 200）</th></tr></thead>
+        <tbody>
+          <tr><td>候选答案准确率 % [Wilson 95%]</td><td class="num">55.5 [48.6, 62.2]</td><td class="num">63.5 [56.6, 69.9]</td></tr>
+          <tr class="hl"><td>最终准确率 % [Wilson 95%]</td><td class="num">67.5 [60.7, 73.6]</td><td class="num">76.5 [70.2, 81.8]</td></tr>
+          <tr><td>纠正（错 → 对）/ 损坏（对 → 错）</td><td class="num">36 / 12</td><td class="num">38 / 12</td></tr>
+          <tr><td>McNemar p（候选答案 vs 最终）</td><td class="num">7.2e−4</td><td class="num">3.1e−4</td></tr>
+          <tr><td>平均调用次数</td><td class="num">3.000</td><td class="num">2.985</td></tr>
+          <tr><td>调用次数分布</td><td class="num">{3: 200}</td><td class="num">{1: 1, 2: 1, 3: 198}</td></tr>
+          <tr><td>调用率（候选答案错 / 对）</td><td class="num">100% / 100%</td><td class="num">100% / 100%</td></tr>
+          <tr><td>调用差</td><td class="num">0</td><td class="num">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_routing_behavior.svg" alt="左：dev 与 test 各 200 题的候选答案到最终答案转移计数（保持正确、纠正、保持错误、损坏）。右：每题子智能体调用次数分布，400 条轨迹中 398 条调用 3 次。" width="1158" height="852">
+        <figcaption><b>图 9.</b> 快照中 8B GRPO 继续训练轨迹的行为。(a) 候选答案 → 最终答案的转移：dev 55.5% → 67.5%，test 63.5% → 76.5%。(b) 每题调用次数：400 条轨迹中 398 条调用了全部三个子智能体。图中 advisor = 子智能体，draft = 候选答案。</figcaption>
+      </figure>
+    </div>
+    <div class="prose">
+      <p>解读：子智能体确实有用，纠正数约为损坏数的 3 倍，准确率提升 12–13 pp，McNemar 检验显著。但策略没有学会停止：候选答案对和错时调用率都是 100%，调用差为 0，准确率提升来自「全部咨询」而不是「按需咨询」。test 的 2.985 次与论文表 10 的 2.98 一致。</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_counterfactual.svg" alt="MedQA 400 道训练题、深度 1 的一步强制分支：直接提交 55.0%，总是 Extractor 58.5%，总是 Reasoner 78.8%，总是 Verifier 84.5%，事后最优一步分支 91.0%，带 Wilson 区间。" width="1529" height="871">
+        <figcaption><b>图 10.</b> 快照中同一 8B 运行的同状态干预采集（400 道 MedQA 训练题，深度 1，温度 0；<code>marginal_value_report.json</code>）。直接提交 55.0%；总是调用 Extractor 58.5%（救回 25、损坏 11）、Reasoner 78.8%（100、5）、Verifier 84.5%（127、9）；事后最优的一步分支 91.0%。根候选答案直接正确 220 题，一次调用后救回 144 题，无标签 36 题；按 ρ = 1.0 的上限，蒸馏数据保留 144 条提交轨迹和 144 条一次调用轨迹（288 个决策）。首选子智能体 Verifier 86、Reasoner 51、Extractor 7。图中 advisor = 子智能体。</figcaption>
+      </figure>
+    </div>
+    <div class="callout warn">
+      <span class="label">这次采集的数据问题</span>
+      <p>这 400 道采集题与子智能体 SFT 的题目按题干 hash 重叠 400/400（采集命令没有传 <code>--exclude_sft_example_ids</code>）。子智能体在自己训练过的题上表现更好，所以图 10 的救回率和 +36 pp 的上界很可能偏高。dev / test 评测不受影响。整理后的文档已补上这个参数。</p>
+    </div>
+
+    <h3 id="diag-scaling">5.2 前期 4B / 8B / 9B 实验（附录 B）</h3>
+    <div class="prose">
+      <p>论文表 6 的要点：最好的前期多智能体变体相对同规模 base 模型的增益在 9B 上明显缩小，9B GPQA 为零。这些实验做在边际价值实验之前。作者在最终四个任务中的三个上，用 Qwen3-4B、Qwen3-8B、Qwen3.5-9B 评估了冷启动、通用（Generic）和任务专用（Specific）的多智能体训练变体。开发集每任务 100–200 题。表 6 取每个（任务，规模）格子里最好的变体减去同规模 base。因为是跨多个变体取最大值，而且样本小，论文把它定位为「动机性张力的证据」，不是 scaling law，也不是主比较。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>论文表 6（附录 B）. 最好的前期多智能体变体相对同规模 base 模型的回溯增益（pp）。</caption>
+        <thead><tr><th>任务</th><th class="num">Qwen3-4B</th><th class="num">Qwen3-8B</th><th class="num">Qwen3.5-9B</th></tr></thead>
+        <tbody>
+          <tr><td>MedQA</td><td class="num pos">+16.5</td><td class="num pos">+20.0</td><td class="num pos">+4.0</td></tr>
+          <tr><td>GPQA</td><td class="num pos">+13.0</td><td class="num pos">+6.0</td><td class="num">+0.0</td></tr>
+          <tr><td>MMLU-Pro</td><td class="num pos">+30.5</td><td class="num pos">+22.5</td><td class="num pos">+10.5</td></tr>
+          <tr class="hl"><td>宏平均增益</td><td class="num pos">+20.0</td><td class="num pos">+16.2</td><td class="num pos">+4.8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_main_results.svg" alt="四个 benchmark 各一面板，每个 manager 规模三根柱：base 直答、冷启动 SFT、最好的 GRPO 格子，带二项标准误。LegalBench 面板在论文中未使用。" width="1700" height="1262">
+        <figcaption><b>图 11.</b> 前期实验的全部数据（<code>results/predecessor_scaling/main_results.json</code>）：base 直答、冷启动 SFT、最好的 GRPO 格子，按 benchmark 和 manager 规模。误差棒 ±1 二项标准误。LegalBench 在图中保留，但论文已把它去掉；表 6 的数值等于每面板「最好 GRPO 格子」减「base」。图中 advisor = 子智能体；G = 通用子智能体，S = 任务专用子智能体，kgen = GRPO 组大小。</figcaption>
+      </figure>
+    </div>
+    <div class="prose">
+      <p>从快照里的 28 个 GRPO 格子算出的统计（含 LegalBench）：相对 base 平均 +13.9 pp，相对冷启动平均 +4.8 pp；26 格高于 base，1 格持平，1 格更低。按规模，相对 base 的平均增益 4B +16.0、8B +14.2、9B +7.0。GRPO 低于自己冷启动的有 5/28 格，全是 Generic 条件：MMLU-Pro G-4B-8gen −15.0、GPQA G-8B-6gen −5.0、MMLU-Pro G-4B-6gen −5.0、MedQA G-8B-4gen −4.0、MedQA G-8B-6gen −2.0。噪声标尺：p = 0.5 时单个分数的标准误 n = 100 为 5.0 pp，n = 200 为 3.5 pp。</p>
+    </div>
+    <div class="box">
+      <figure class="narrow">
+        <img src="static/images/fig_grpo_vs_cold.svg" alt="28 个 GRPO 格子相对各自冷启动的准确率差，按 benchmark 分行，通用与任务专用子智能体用颜色区分，规模用形状区分，带噪声带；低于冷启动的 5 格标出名称。" width="1400" height="1228">
+        <figcaption><b>图 12.</b> 28 个 GRPO 格子的「GRPO − 冷启动」准确率差（pp）。灰带是 p = 0.5 时两个分数配对差的 ±1 标准误。低于自己冷启动的 5 格都标了名字，全部是通用子智能体条件。</figcaption>
+      </figure>
+    </div>
+    <div class="prose">
+      <p>论文对这段历史的结论：只看结果的 GRPO 和额外的子智能体 SFT 都没有稳定地改善早期流程，而 manager 侧的冷启动 SFT 改善了大多数（任务，规模）格子。这些前期变体之间不止一个因素不同，所以论文不把它们当消融，它们的作用是促成受控的同状态采集。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 6. 代码与数据现状 ===== -->
+<section class="section" id="code">
+  <div class="container">
+    <h2>6. 代码与数据现状</h2>
+    <div class="prose">
+      <p>整理后的仓库位于 <code>supplementary_code/</code>；原 <code>7.98/agent_routing</code> 目录没有改动。代码早于论文的最终用词：代码里的 advisor 就是论文的子智能体，<code>DRAFT_ANSWER_&lt;X&gt;</code> 就是候选答案，最后的 <code>ANSWER_&lt;X&gt;</code> 行就是提交。所有 stage 都通过 <code>python -m src.pipeline.cli &lt;stage&gt;</code> 运行。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R6. 快照与论文的对应（摘自 README 的术语对照表）。</caption>
+        <thead><tr><th>论文概念</th><th>代码 / CLI</th></tr></thead>
+        <tbody>
+          <tr><td>同状态干预采集，搜索深度 D</td><td><code>build_marginal_sft</code>，<code>--mv_max_depth {1,2,3}</code></td></tr>
+          <tr><td>边际价值 Δ、救回 / 损坏</td><td><code>marginal_value_report.json</code> 中的 <code>rescue_rate</code>、<code>corruption_rate</code>、<code>net_marginal_rate</code></td></tr>
+          <tr><td>最短成功路径选择（式 3–4）</td><td><code>src/manager/marginal_value.py</code> 中的 <code>choose_preferred_sequence</code></td></tr>
+          <tr><td>提交/救回比 ρ</td><td><code>--mv_max_commit_rescue_ratio</code>（0 = 只保留救回；−1 = 保留全部提交）</td></tr>
+          <tr><td>边际价值蒸馏（manager SFT）</td><td><code>train_manager_sft</code>，输入 <code>manager_sft_marginal.jsonl</code></td></tr>
+          <tr><td>学到的委派或提交策略的评测</td><td><code>eval_manager_tools</code>；报告里 <code>initial_draft_accuracy</code> = 候选答案准确率，<code>avg_tool_calls</code> = 调用 / 题，<code>correction_rate</code> / <code>corruption_rate</code></td></tr>
+          <tr><td>强制一次 Verifier / 强制全部三个</td><td><code>eval_manager_forced --eval_forced_tools verifier</code> / <code>extractor,reasoner,verifier</code></td></tr>
+          <tr><td>调用差</td><td>评测报告里的 <code>draft_conditioned_call_gap</code></td></tr>
+          <tr><td>只看结果的 GRPO 继续训练（附录 D 诊断）</td><td><code>train_manager_grpo</code>，<code>scripts/train_manager_grpo_multigpu.sh</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>快照缺什么</h3>
+      <ul>
+        <li><b>AQuA-RAT 加载器。</b>快照里只有 MedQA、MMLU-Pro、GPQA（以及论文没用的 LegalBench）的加载器。</li>
+        <li><b>论文表 1–5 的 9B 主实验记录。</b>逐题分支和评测记录随论文的 dashboard 导出，不在快照中。快照里的两组结果只对应附录 B 和附录 D。</li>
+        <li><b>候选匹配的强制 Verifier 基线。</b>论文记录中的强制 Verifier 没有把同一个委派前的候选答案传给 Verifier。快照里对应的 stage 是 <code>eval_manager_forced</code>；它是否传入候选答案，本次没有核实。<span class="todo">待确认</span></li>
+      </ul>
+      <h3>数据隔离检查（按题干 hash 复核）</h3>
+      <ul class="checks">
+        <li><span class="status ok">通过</span><span>GPQA：子智能体 SFT 的 160 题与 eval100 无重叠，全部来自 train446 池。</span></li>
+        <li><span class="status ok">通过</span><span>MedQA：子智能体 SFT 的 600 题与 dev200 无重叠。</span></li>
+        <li><span class="status no">问题</span><span>MedQA 8B 采集集：400 题全部包含在子智能体 SFT 数据中（400/400）。原因是采集命令没有传 <code>--exclude_sft_example_ids</code>；文档已修正。影响见 §5.1。</span></li>
+      </ul>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R7. 本阶段完成的代码整理。</caption>
+        <thead><tr><th>类别</th><th>处理</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>对齐论文</td><td>README 按 MARGENT 重写，附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 开头加范围说明（GRPO 只是诊断，不是主方法）；论文图 1 加入 <code>docs/figures/margent_overview.png</code>；<code>results/README.md</code> 说明两组记录分别对应附录 B 和附录 D</td></tr>
+          <tr><td>冗余文件</td><td>删除 <code>.bak</code> / <code>.bak_*</code> / <code>.DS_Store</code>；删除依赖旧 rule_applier 流程的脚本 <code>generate_openai_us4_all.py</code>；删除一个名为 ZeRO-3 但内容与 <code>zero2_ga2</code> 完全相同的配置，把真正的 ZeRO-3 配置改名为 <code>accelerate_zero3.yaml</code></td></tr>
+          <tr><td>关键修复</td><td>原 <code>.gitignore</code> 忽略了 <code>src/subagents/prompts/reasoner.py</code> 和 <code>runtime_prompts.py</code>。这两个是核心 prompt 文件，直接推到 GitHub 的话仓库将无法运行。现已纳入仓库</td></tr>
+          <tr><td>代码清理</td><td><code>routing_anchor.py</code> 末尾追加的 monkey-patch 已并入 <code>_render_chat</code>。原补丁会把 <code>tools</code> 列表也当成消息处理，给每个工具 schema 加上 <code>"tool_calls": null</code>，从而改变 SFT-anchor 渲染出的 system prompt。新实现只处理消息。该路径只在 <code>--mgr_sft_anchor_coef &gt; 0</code> 时启用，不影响主方法</td></tr>
+          <tr><td>匿名化</td><td>LICENSE 作者改为 Anonymous Authors；脚本和文档里的集群用户路径改为 <code>$VENV_DIR</code>（默认 <code>./.venv</code>）；<code>$ACCELERATE_CONFIG</code> 可覆盖</td></tr>
+          <tr><td>文档</td><td>README 含方法、目录结构、安装、数据、完整 MedQA 复现流程和 stage 表；主协议放在 <code>docs/EXPERIMENTS.md</code>；ADC 方案归档到 <code>docs/history/</code>；<code>build_marginal_sft</code> 的命令补上 <code>--exclude_sft_example_ids</code>，排除子智能体 SFT 题目</td></tr>
+          <tr><td>结果</td><td><code>results/predecessor_scaling/main_results.json</code>（附录 B）；<code>results/medqa_marginal_v1/</code>（附录 D 的 8B 运行：采集记录、dev / test 逐题轨迹）；两个只依赖标准库的脚本 <code>scripts/summarize_main_results.py</code> 和 <code>scripts/analyze_results.py</code>（Wilson 区间 + 精确 McNemar），没有 GPU 也能复算 §5 的全部数字</td></tr>
+          <tr><td>未包含</td><td>数据集文件（由 loader 自动下载；GPQA 的条款不允许公开明文）、教师生成的 SFT 数据（203 MB）、内部规划文档 <code>PAPER_READINESS.md</code></td></tr>
+          <tr><td>验证</td><td>所有 <code>.py</code> 文件语法解析通过；10 个单元测试通过；shell 脚本 <code>bash -n</code> 通过；README 和 <code>docs/EXPERIMENTS.md</code> 中引用的每个 CLI 参数和 stage 名都与 <code>cli.py</code> 核对过</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 7. 局限与风险 ===== -->
+<section class="section" id="risks">
+  <div class="container">
+    <h2>7. 局限与风险</h2>
+    <div class="prose">
+      <p>前半部分是论文自己写明的局限和 checklist 中回答「No」的项；后半部分是快照层面的问题。状态列：<span class="status ok">支持</span> / <span class="status weak">弱</span> / <span class="status no">未支持 或 缺失</span>，表示这条结论目前有多少证据。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>表 R8. 结论与证据。</caption>
+        <thead><tr><th>结论 / 风险</th><th>现有证据与限定</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td>选对的一次委派拿到大部分可测得增益</td><td>论文表 1，四个采集集，Gain@1 83.0–96.9%，宏平均 91.7%。上界只在枚举的动作序列内成立，不是对任意提示、模型或工具的上界</td><td><span class="status ok">支持</span></td></tr>
+          <tr><td>学到的策略高于自己的候选答案，调用约 0.5 次 / 题</td><td>论文表 3，四个与采集集不相交的评测都为正（GPQA 行同时是其开发池，不是锁定评测）。但它是端到端差异，不是路由因果效应，也不是相对独立单模型基线的增益；AQuA-RAT 的 scaffold 候选答案弱于 plain-answer 提示</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>一次选择性调用 ≈ 三次强制调用</td><td>论文表 5，开发集诊断，按验证集选出的操作点；MMLU-Pro 持平，AQuA-RAT 反超，GPQA 差 6.0，MedQA 差 1.5</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>强制 Verifier 基线</td><td>记录中的实现没有传入同一个委派前的候选答案，是强的操作基线，不是匹配的路由消融</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>策略在正确的状态上调用</td><td>四个任务调用差为正；匹配预算重放只有 MedQA 高于随机区间，MMLU-Pro 和 GPQA 在区间内；该检验分不开候选答案使用和题目难度</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>GPQA 上的选择性</td><td>候选答案只比随机高 17 分；调用差 0.067（选出的操作点）/ 0.017（表 7 代表性操作点）；强制全部仍高 6.0 分；n = 100</td><td><span class="status no">未支持</span></td></tr>
+          <tr><td>统计显著性</td><td>只有一个 MedQA 配置有三个种子（80.5 ± 1.0，0.517 ± 0.043）；其余任务级比较都是单次运行；checklist 第 7 项答 No</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>可复现性元数据</td><td>导出记录缺优化器、LoRA、提示词、硬件、token、延迟；checklist 第 4、6、8 项答 No。完整发布还需要稳定的 example id 和逐题输出</td><td><span class="status no">缺失</span></td></tr>
+          <tr><td>子智能体池与顺序</td><td>固定三个角色；强制全部用记录的 scaffold 顺序，没有顺序扫描</td><td><span class="status weak">弱</span></td></tr>
+          <tr><td>8B 快照的采集集与子智能体 SFT 重叠</td><td>400/400 重叠，一步救回率偏乐观；只影响附录 D 的 8B 运行，不影响其 dev / test 评测</td><td><span class="status no">问题</span></td></tr>
+          <tr><td>主实验记录不在快照中</td><td>论文表 1–5 的 9B 逐题记录随 dashboard 导出；快照中无法复算这些表</td><td><span class="status no">缺失</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. 下一阶段计划 ===== -->
+<section class="section" id="plan">
+  <div class="container">
+    <h2>8. 下一阶段计划（按优先级）</h2>
+    <div class="prose">
+      <ol>
+        <li><b>把 9B 主实验的逐题记录纳入发布包</b>（checklist 和附录 E 的要求）：表 1–5 的分支与评测记录、提示词、LoRA 与优化器设置、每个 split 的稳定 example id、逐题输出。</li>
+        <li><b>补上 AQuA-RAT 加载器</b>，让四个 benchmark 都能从快照跑通。</li>
+        <li><b>多种子与配对置信区间：</b>主方法和最强基线各跑多个种子；用逐题输出做配对 bootstrap 或 McNemar 检验，而不是只报单次运行。</li>
+        <li><b>候选匹配的强制 Verifier 基线：</b>把同一个委派前的候选答案传给 Verifier，得到匹配的路由消融。</li>
+        <li><b>独立的单模型基线：</b>plain-answer 提示、self-consistency（多次采样投票，<code>eval_manager --eval_sc_k K</code>），回应「端到端差异不是相对单模型基线的增益」这一限定。</li>
+        <li><b>子智能体顺序扫描：</b>强制全部目前只用记录的 scaffold 顺序。</li>
+        <li><b>token 与延迟统计：</b>目前资源只按调用次数计。</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 9. 待确认 ===== -->
+<section class="section" id="todo">
+  <div class="container">
+    <h2>9. 待确认</h2>
+    <div class="callout warn">
+      <span class="label">需要作者补充</span>
+      <ul class="checks">
+        <li><span class="status weak">待确认</span><span>9B 主实验用的代码版本与本快照（<code>7.98/agent_routing</code>）的关系；快照里的 <code>grpo_binary_mv2</code> 与论文表 10「MedQA，8B manager」是否同一 checkpoint（调用次数一致，训练配置未核对）。<span class="todo">待确认</span></span></li>
+        <li><span class="status weak">待确认</span><span>投稿是否双盲：决定 LICENSE 作者名和路径匿名化是否保留。<span class="todo">待确认</span></span></li>
+        <li><span class="status ok">已确认</span><span>GitHub 仓库：<a href="https://github.com/Candy26i/MARGENT">github.com/Candy26i/MARGENT</a>（代码在 <code>main</code>，本站点在 <code>gh-pages</code>）。</span></li>
+        <li><span class="status weak">待确认</span><span>作者与单位：项目页目前是占位符。<span class="todo">待确认</span></span></li>
+        <li><span class="status weak">待确认</span><span>论文 PDF 是否可以公开链接：项目页的 Paper 按钮目前禁用。<span class="todo">待确认</span></span></li>
+        <li><span class="status weak">部分确认</span><span>论文附录 B 把 Generic / Specific 称为 generic / task-specific multi-agent training variants；「子智能体训练变体」这一解释来自快照的 results/README.md，论文本身未定义。</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 附录 ===== -->
+<section class="section" id="appendix">
+  <div class="container">
+    <h2>附录</h2>
+    <div class="prose">
+      <h3>A. 复现本报告中可复算的数字</h3>
+      <p>以下命令只依赖标准库，不需要 GPU。它们覆盖 §5 的两组诊断；§4 的论文表格来自 <code>static/data/paper_tables.json</code> 的转录，其原始记录不在快照中。</p>
+    </div>
+<pre><code>cd supplementary_code
+python scripts/summarize_main_results.py                      # 附录 B：28 个 GRPO 格子，论文表 6 的来源
+python scripts/analyze_results.py results/medqa_marginal_v1   # 附录 D 的 8B 运行：Wilson 95% 区间 + 精确 McNemar
+python -m unittest tests.test_marginal_value tests.test_routing_anchor
+</code></pre>
+    <div class="prose">
+      <h3>B. 文件清单</h3>
+      <ul>
+        <li><code>supplementary_code/results/predecessor_scaling/main_results.json</code>：附录 B 的全部格子（含论文去掉的 LegalBench），只有汇总准确率。</li>
+        <li><code>supplementary_code/results/medqa_marginal_v1/marginal_value_report.json</code>：8B 运行的采集汇总（400 题，深度 1，ρ = 1.0）。</li>
+        <li><code>supplementary_code/results/medqa_marginal_v1/counterfactual_records.jsonl</code>：每题的直接候选答案、三个强制一步分支的完整轨迹、选出的最短成功目标。</li>
+        <li><code>supplementary_code/results/medqa_marginal_v1/eval_dev200.jsonl</code>、<code>eval_dev200_report.json</code>：GRPO 继续训练后的 manager 在 MedQA 官方 dev 前 200 题（<code>example_id</code> 10178–10377）上的逐题轨迹与汇总。</li>
+        <li><code>supplementary_code/results/medqa_marginal_v1/eval_test200.jsonl</code>、<code>eval_test200_report.json</code>：同一 manager 在官方 test 前 200 题（<code>example_id</code> 11450–11649）上的逐题轨迹与汇总。</li>
+        <li><code>supplementary_code/scripts/summarize_main_results.py</code>、<code>scripts/analyze_results.py</code>：上面两条命令的脚本。</li>
+        <li><code>project_page/static/data/paper_tables.json</code>：论文表 1–10 与正文数字的转录，页面图表的数据来源。</li>
+        <li><code>project_page/static/data/main_results.json</code>：附录 B 数据在页面侧的副本。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>页面模板改编自 <a href="https://nerfies.github.io/">Nerfies</a> 项目页样式。代码以 MIT 协议发布。</p>
+  </div>
+</footer>
+
+</body>
+</html>
