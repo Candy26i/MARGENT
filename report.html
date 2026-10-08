@@ -20,7 +20,6 @@
   .checks li { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.5rem; }
   .checks .status { flex: none; margin-top: 0.2em; }
   #summary .cards { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }
-  #code td:first-child, #risks td:first-child { white-space: normal; }
   figure.narrow img { max-width: min(620px, 100%); }
   .eq { font-family: var(--font-mono); font-size: 0.9em; }
 </style>
@@ -48,11 +47,6 @@
     <li><a href="#setup">3. 实验设置</a></li>
     <li><a href="#results">4. 论文结果</a></li>
     <li><a href="#diagnostics">5. 附录诊断</a></li>
-    <li><a href="#code">6. 代码与数据现状</a></li>
-    <li><a href="#risks">7. 局限与风险</a></li>
-    <li><a href="#plan">8. 下一阶段计划</a></li>
-    <li><a href="#todo">9. 待确认</a></li>
-    <li><a href="#appendix">附录</a></li>
   </ul>
 </aside>
 
@@ -91,7 +85,6 @@
       <p>系统里有一个可训练的 manager（Qwen3.5-9B）和三个冻结的子智能体（Extractor、Reasoner、Verifier，代码中叫 advisor）。每一轮 manager 先写下候选答案（代码中的 <code>DRAFT_ANSWER</code>），然后二选一：提交，或者委派给一个还没用过的子智能体。子智能体只返回结构化信号，不给答案。只有 manager 被微调。</p>
       <p>MARGENT 分两步。采集：从 manager 自己生成的同一个推理状态出发，分别强制「提交」和「委派给每个子智能体」，比较最终答案的对错，得到每次委派的边际价值。蒸馏：把最短的成功路径变成 manager 的监督数据。</p>
       <p>结果：四个推理 benchmark 上，选对的一次委派平均拿到可测得 oracle（事后最优）增益的 91.7%。在与采集集不相交的评测上，学到的策略比自己委派前的候选答案高 17.1 pp，每题只调用 0.53 次。</p>
-      <p class="small"><span class="todo">待确认</span> 表示现有文件无法确定、需要作者补充的事实。</p>
     </div>
 
     <div class="cards">
@@ -115,7 +108,7 @@
       <h3>本阶段产出</h3>
       <ul>
         <li><b>论文投稿：</b>NeurIPS 2026 投稿稿《MARGENT: Measuring the Marginal Value of Delegation in Agentic Systems》，匿名；前 12 页为正文、参考文献和附录 A–E，其余为 checklist。</li>
-        <li><b>代码整理：</b><code>supplementary_code/</code>。README 按论文重写并附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 加范围说明（GRPO 只是诊断）；论文图 1 入库。清理细节见 §6。</li>
+        <li><b>代码整理：</b><code>supplementary_code/</code>。README 按论文重写并附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 加范围说明（GRPO 只是诊断）；论文图 1 入库。</li>
         <li><b>页面：</b>英文项目页 <code>index.html</code>、本报告、<code>static/data/paper_tables.json</code>（论文全部表格的转录，是页面图表的数据来源）。</li>
       </ul>
     </div>
@@ -468,12 +461,12 @@
     <div class="box">
       <figure>
         <img src="static/images/fig_grpo_collapse.svg" alt="左：8B 与 9B GRPO 继续训练的每题调用次数 2.98 与 3.00，参考线 0.517 与 0.526。右：快照中 8B 轨迹的调用次数分布，dev 200 题全部 3 次，test 198 题 3 次。">
-        <figcaption><b>图 8.</b> 左：GRPO 继续训练的每题调用次数（论文表 10），参考线为 MARGENT SFT 的 MedQA 三种子均值 0.517 ± 0.043 和与采集集不相交的评测的宏平均 0.526（论文表 3）。右：本快照保存的 8B GRPO 运行（对应附录 D 的 8B 行，checkpoint 身份见 §9）的调用次数分布，dev {3: 200}，test {1: 1, 2: 1, 3: 198}。</figcaption>
+        <figcaption><b>图 8.</b> 左：GRPO 继续训练的每题调用次数（论文表 10），参考线为 MARGENT SFT 的 MedQA 三种子均值 0.517 ± 0.043 和与采集集不相交的评测的宏平均 0.526（论文表 3）。右：本快照保存的 8B GRPO 运行（对应附录 D 的 8B 行）的调用次数分布，dev {3: 200}，test {1: 1, 2: 1, 3: 198}。</figcaption>
       </figure>
     </div>
     <h4>本快照中保存的 8B 轨迹（<code>results/medqa_marginal_v1/</code>）</h4>
     <div class="prose">
-      <p><code>results/README.md</code> 把这组文件对应到附录 D 的「MedQA，8B manager」运行：Qwen3-8B manager，先做深度 1 的同状态干预采集，再从中蒸馏，然后用只看结果的 GRPO 继续训练（checkpoint 目录 <code>grpo_binary_mv2</code>）。test 的 2.985 次调用与表 10 的 2.98 一致；是否为同一个 checkpoint 仍待作者确认（§9）。它不是正文报告的 MARGENT SFT 策略。</p>
+      <p><code>results/README.md</code> 把这组文件对应到附录 D 的「MedQA，8B manager」运行：Qwen3-8B manager，先做深度 1 的同状态干预采集，再从中蒸馏，然后用只看结果的 GRPO 继续训练（checkpoint 目录 <code>grpo_binary_mv2</code>）。test 的 2.985 次调用与表 10 的 2.98 一致；是否为同一个 checkpoint 仍待作者确认。它不是正文报告的 MARGENT SFT 策略。</p>
     </div>
     <div class="table-wrap">
       <table>
@@ -545,158 +538,6 @@
     </div>
     <div class="prose">
       <p>论文对这段历史的结论：只看结果的 GRPO 和额外的子智能体 SFT 都没有稳定地改善早期流程，而 manager 侧的冷启动 SFT 改善了大多数（任务，规模）格子。这些前期变体之间不止一个因素不同，所以论文不把它们当消融，它们的作用是促成受控的同状态采集。</p>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 6. 代码与数据现状 ===== -->
-<section class="section" id="code">
-  <div class="container">
-    <h2>6. 代码与数据现状</h2>
-    <div class="prose">
-      <p>整理后的仓库位于 <code>supplementary_code/</code>；原 <code>7.98/agent_routing</code> 目录没有改动。代码早于论文的最终用词：代码里的 advisor 就是论文的子智能体，<code>DRAFT_ANSWER_&lt;X&gt;</code> 就是候选答案，最后的 <code>ANSWER_&lt;X&gt;</code> 行就是提交。所有 stage 都通过 <code>python -m src.pipeline.cli &lt;stage&gt;</code> 运行。</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <caption>表 R6. 快照与论文的对应（摘自 README 的术语对照表）。</caption>
-        <thead><tr><th>论文概念</th><th>代码 / CLI</th></tr></thead>
-        <tbody>
-          <tr><td>同状态干预采集，搜索深度 D</td><td><code>build_marginal_sft</code>，<code>--mv_max_depth {1,2,3}</code></td></tr>
-          <tr><td>边际价值 Δ、救回 / 损坏</td><td><code>marginal_value_report.json</code> 中的 <code>rescue_rate</code>、<code>corruption_rate</code>、<code>net_marginal_rate</code></td></tr>
-          <tr><td>最短成功路径选择（式 3–4）</td><td><code>src/manager/marginal_value.py</code> 中的 <code>choose_preferred_sequence</code></td></tr>
-          <tr><td>提交/救回比 ρ</td><td><code>--mv_max_commit_rescue_ratio</code>（0 = 只保留救回；−1 = 保留全部提交）</td></tr>
-          <tr><td>边际价值蒸馏（manager SFT）</td><td><code>train_manager_sft</code>，输入 <code>manager_sft_marginal.jsonl</code></td></tr>
-          <tr><td>学到的委派或提交策略的评测</td><td><code>eval_manager_tools</code>；报告里 <code>initial_draft_accuracy</code> = 候选答案准确率，<code>avg_tool_calls</code> = 调用 / 题，<code>correction_rate</code> / <code>corruption_rate</code></td></tr>
-          <tr><td>强制一次 Verifier / 强制全部三个</td><td><code>eval_manager_forced --eval_forced_tools verifier</code> / <code>extractor,reasoner,verifier</code></td></tr>
-          <tr><td>调用差</td><td>评测报告里的 <code>draft_conditioned_call_gap</code></td></tr>
-          <tr><td>只看结果的 GRPO 继续训练（附录 D 诊断）</td><td>已移出主分支，保留在 <code>legacy</code> 分支（标签 <code>v0.1-full</code>）</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="prose">
-      <h3>快照缺什么</h3>
-      <ul>
-        <li><b>AQuA-RAT 加载器：已补上。</b>原快照只有 MedQA、MMLU-Pro、GPQA 的加载器；本次精简新增 <code>load_aqua_rat</code>（论文用的 test split，254 题），LegalBench 加载器移到 legacy 分支。</li>
-        <li><b>论文表 1–5 的 9B 主实验记录。</b>逐题分支和评测记录随论文的 dashboard 导出，不在快照中。快照里的两组结果只对应附录 B 和附录 D。</li>
-        <li><b>候选匹配的强制 Verifier 基线。</b>论文记录中的强制 Verifier 没有把同一个委派前的候选答案传给 Verifier。快照里对应的 stage 是 <code>eval_manager_forced</code>；它是否传入候选答案，本次没有核实。<span class="todo">待确认</span></li>
-      </ul>
-      <h3>数据隔离检查（按题干 hash 复核）</h3>
-      <ul class="checks">
-        <li><span class="status ok">通过</span><span>GPQA：子智能体 SFT 的 160 题与 eval100 无重叠，全部来自 train446 池。</span></li>
-        <li><span class="status ok">通过</span><span>MedQA：子智能体 SFT 的 600 题与 dev200 无重叠。</span></li>
-        <li><span class="status no">问题</span><span>MedQA 8B 采集集：400 题全部包含在子智能体 SFT 数据中（400/400）。原因是采集命令没有传 <code>--exclude_sft_example_ids</code>；文档已修正。影响见 §5.1。</span></li>
-      </ul>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <caption>表 R7. 本阶段完成的代码整理。</caption>
-        <thead><tr><th>类别</th><th>处理</th></tr></thead>
-        <tbody>
-          <tr class="hl"><td>精简（10-07）</td><td>按论文主线精简，老师指出的"代码太乱"主要在这一步处理：删除 GRPO / evolve 循环 / ADC 奖励 / SFT-anchor / 冷启动 / LegalBench（全部保留在 <code>legacy</code> 分支，标签 <code>v0.1-full</code>）；2042 行的 <code>stages.py</code> 拆成 <code>data / subagent_stages / manager_stages / eval_stages</code> 四个模块；三份重复的 tool-call 处理合并为 <code>chat_template.py</code>，manager 加载、子智能体池、工具 schema 各只保留一份；CLI 从 20 个 stage 减到 14 个，参数按阶段分组；新增 AQuA-RAT 加载器；单元测试增至 22 个，CI 加 pyflakes。共改动 57 个文件，+3045 / −6932 行。四个核对 agent 逐函数比对了搬动前后的代码，保留阶段的行为不变，改动的默认值记录在 <code>CHANGELOG.md</code></td></tr>
-          <tr><td>对齐论文</td><td>README 按 MARGENT 重写，附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 开头加范围说明（GRPO 只是诊断，不是主方法）；论文图 1 加入 <code>docs/figures/margent_overview.png</code>；<code>results/README.md</code> 说明两组记录分别对应附录 B 和附录 D</td></tr>
-          <tr><td>冗余文件</td><td>删除 <code>.bak</code> / <code>.bak_*</code> / <code>.DS_Store</code>；删除依赖旧 rule_applier 流程的脚本 <code>generate_openai_us4_all.py</code>；删除一个名为 ZeRO-3 但内容与 <code>zero2_ga2</code> 完全相同的配置，把真正的 ZeRO-3 配置改名为 <code>accelerate_zero3.yaml</code></td></tr>
-          <tr><td>关键修复</td><td>原 <code>.gitignore</code> 忽略了 <code>src/subagents/prompts/reasoner.py</code> 和 <code>runtime_prompts.py</code>。这两个是核心 prompt 文件，直接推到 GitHub 的话仓库将无法运行。现已纳入仓库</td></tr>
-          <tr><td>代码清理</td><td><code>routing_anchor.py</code> 末尾追加的 monkey-patch 已并入 <code>_render_chat</code>。原补丁会把 <code>tools</code> 列表也当成消息处理，给每个工具 schema 加上 <code>"tool_calls": null</code>，从而改变 SFT-anchor 渲染出的 system prompt。新实现只处理消息。该路径只在 <code>--mgr_sft_anchor_coef &gt; 0</code> 时启用，不影响主方法</td></tr>
-          <tr><td>匿名化</td><td>LICENSE 作者改为 Anonymous Authors；脚本和文档里的集群用户路径改为 <code>$VENV_DIR</code>（默认 <code>./.venv</code>）；<code>$ACCELERATE_CONFIG</code> 可覆盖</td></tr>
-          <tr><td>文档</td><td>README 含方法、目录结构、安装、数据、完整 MedQA 复现流程和 stage 表；主协议放在 <code>docs/EXPERIMENTS.md</code>；ADC 方案归档到 <code>docs/history/</code>；<code>build_marginal_sft</code> 的命令补上 <code>--exclude_sft_example_ids</code>，排除子智能体 SFT 题目</td></tr>
-          <tr><td>结果</td><td><code>results/predecessor_scaling/main_results.json</code>（附录 B）；<code>results/medqa_marginal_v1/</code>（附录 D 的 8B 运行：采集记录、dev / test 逐题轨迹）；两个只依赖标准库的脚本 <code>scripts/summarize_main_results.py</code> 和 <code>scripts/analyze_results.py</code>（Wilson 区间 + 精确 McNemar），没有 GPU 也能复算 §5 的全部数字</td></tr>
-          <tr><td>未包含</td><td>数据集文件（由 loader 自动下载；GPQA 的条款不允许公开明文）、教师生成的 SFT 数据（203 MB）、内部规划文档 <code>PAPER_READINESS.md</code></td></tr>
-          <tr><td>验证</td><td>所有 <code>.py</code> 文件语法解析通过；22 个单元测试通过（精简前 10 个）；shell 脚本 <code>bash -n</code> 通过；README 和 <code>docs/EXPERIMENTS.md</code> 中引用的每个 CLI 参数和 stage 名都与 <code>cli.py</code> 核对过</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 7. 局限与风险 ===== -->
-<section class="section" id="risks">
-  <div class="container">
-    <h2>7. 局限与风险</h2>
-    <div class="prose">
-      <p>前半部分是论文自己写明的局限和 checklist 中回答「No」的项；后半部分是快照层面的问题。状态列：<span class="status ok">支持</span> / <span class="status weak">弱</span> / <span class="status no">未支持 或 缺失</span>，表示这条结论目前有多少证据。</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <caption>表 R8. 结论与证据。</caption>
-        <thead><tr><th>结论 / 风险</th><th>现有证据与限定</th><th>状态</th></tr></thead>
-        <tbody>
-          <tr><td>选对的一次委派拿到大部分可测得增益</td><td>论文表 1，四个采集集，Gain@1 83.0–96.9%，宏平均 91.7%。上界只在枚举的动作序列内成立，不是对任意提示、模型或工具的上界</td><td><span class="status ok">支持</span></td></tr>
-          <tr><td>学到的策略高于自己的候选答案，调用约 0.5 次 / 题</td><td>论文表 3，四个与采集集不相交的评测都为正（GPQA 行同时是其开发池，不是锁定评测）。但它是端到端差异，不是路由因果效应，也不是相对独立单模型基线的增益；AQuA-RAT 的 scaffold 候选答案弱于 plain-answer 提示</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>一次选择性调用 ≈ 三次强制调用</td><td>论文表 5，开发集诊断，按验证集选出的操作点；MMLU-Pro 持平，AQuA-RAT 反超，GPQA 差 6.0，MedQA 差 1.5</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>强制 Verifier 基线</td><td>记录中的实现没有传入同一个委派前的候选答案，是强的操作基线，不是匹配的路由消融</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>策略在正确的状态上调用</td><td>四个任务调用差为正；匹配预算重放只有 MedQA 高于随机区间，MMLU-Pro 和 GPQA 在区间内；该检验分不开候选答案使用和题目难度</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>GPQA 上的选择性</td><td>候选答案只比随机高 17 分；调用差 0.067（选出的操作点）/ 0.017（表 7 代表性操作点）；强制全部仍高 6.0 分；n = 100</td><td><span class="status no">未支持</span></td></tr>
-          <tr><td>统计显著性</td><td>只有一个 MedQA 配置有三个种子（80.5 ± 1.0，0.517 ± 0.043）；其余任务级比较都是单次运行；checklist 第 7 项答 No</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>可复现性元数据</td><td>导出记录缺优化器、LoRA、提示词、硬件、token、延迟；checklist 第 4、6、8 项答 No。完整发布还需要稳定的 example id 和逐题输出</td><td><span class="status no">缺失</span></td></tr>
-          <tr><td>子智能体池与顺序</td><td>固定三个角色；强制全部用记录的 scaffold 顺序，没有顺序扫描</td><td><span class="status weak">弱</span></td></tr>
-          <tr><td>8B 快照的采集集与子智能体 SFT 重叠</td><td>400/400 重叠，一步救回率偏乐观；只影响附录 D 的 8B 运行，不影响其 dev / test 评测</td><td><span class="status no">问题</span></td></tr>
-          <tr><td>主实验记录不在快照中</td><td>论文表 1–5 的 9B 逐题记录随 dashboard 导出；快照中无法复算这些表</td><td><span class="status no">缺失</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 8. 下一阶段计划 ===== -->
-<section class="section" id="plan">
-  <div class="container">
-    <h2>8. 下一阶段计划（按优先级）</h2>
-    <div class="prose">
-      <ol>
-        <li><b>把 9B 主实验的逐题记录纳入发布包</b>（checklist 和附录 E 的要求）：表 1–5 的分支与评测记录、提示词、LoRA 与优化器设置、每个 split 的稳定 example id、逐题输出。</li>
-        <li><b>在有 GPU 的机器上把精简后的代码跑通一遍</b>：四个 benchmark 各走一次采集 → 蒸馏 → 评测，确认与论文表 1–5 的流程一致（AQuA-RAT 加载器已补上，但本地无 GPU，没有端到端运行过）。</li>
-        <li><b>多种子与配对置信区间：</b>主方法和最强基线各跑多个种子；用逐题输出做配对 bootstrap 或 McNemar 检验，而不是只报单次运行。</li>
-        <li><b>候选匹配的强制 Verifier 基线：</b>把同一个委派前的候选答案传给 Verifier，得到匹配的路由消融。</li>
-        <li><b>独立的单模型基线：</b>plain-answer 提示、self-consistency（多次采样投票，<code>eval_manager --eval_sc_k K</code>），回应「端到端差异不是相对单模型基线的增益」这一限定。</li>
-        <li><b>子智能体顺序扫描：</b>强制全部目前只用记录的 scaffold 顺序。</li>
-        <li><b>token 与延迟统计：</b>目前资源只按调用次数计。</li>
-      </ol>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 9. 待确认 ===== -->
-<section class="section" id="todo">
-  <div class="container">
-    <h2>9. 待确认</h2>
-    <div class="callout warn">
-      <span class="label">需要作者补充</span>
-      <ul class="checks">
-        <li><span class="status weak">待确认</span><span>9B 主实验用的代码版本与本快照（<code>7.98/agent_routing</code>）的关系；快照里的 <code>grpo_binary_mv2</code> 与论文表 10「MedQA，8B manager」是否同一 checkpoint（调用次数一致，训练配置未核对）。<span class="todo">待确认</span></span></li>
-        <li><span class="status weak">待确认</span><span>投稿是否双盲：决定 LICENSE 作者名和路径匿名化是否保留。<span class="todo">待确认</span></span></li>
-        <li><span class="status ok">已确认</span><span>GitHub 仓库：<a href="https://github.com/Candy26i/MARGENT">github.com/Candy26i/MARGENT</a>（代码在 <code>main</code>，本站点在 <code>gh-pages</code>）。</span></li>
-        <li><span class="status weak">待确认</span><span>论文 PDF 是否可以公开链接：项目页的 Paper 按钮目前禁用。<span class="todo">待确认</span></span></li>
-        <li><span class="status weak">部分确认</span><span>论文附录 B 把 Generic / Specific 称为 generic / task-specific multi-agent training variants；「子智能体训练变体」这一解释来自快照的 results/README.md，论文本身未定义。</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 附录 ===== -->
-<section class="section" id="appendix">
-  <div class="container">
-    <h2>附录</h2>
-    <div class="prose">
-      <h3>A. 复现本报告中可复算的数字</h3>
-      <p>以下命令只依赖标准库，不需要 GPU。它们覆盖 §5 的两组诊断；§4 的论文表格来自 <code>static/data/paper_tables.json</code> 的转录，其原始记录不在快照中。</p>
-    </div>
-<pre><code>cd supplementary_code
-python scripts/summarize_main_results.py                      # 附录 B：28 个 GRPO 格子，论文表 6 的来源
-python scripts/analyze_results.py results/medqa_marginal_v1   # 附录 D 的 8B 运行：Wilson 95% 区间 + 精确 McNemar
-python -m unittest tests.test_marginal_value tests.test_routing_anchor
-</code></pre>
-    <div class="prose">
-      <h3>B. 文件清单</h3>
-      <ul>
-        <li><code>supplementary_code/results/predecessor_scaling/main_results.json</code>：附录 B 的全部格子（含论文去掉的 LegalBench），只有汇总准确率。</li>
-        <li><code>supplementary_code/results/medqa_marginal_v1/marginal_value_report.json</code>：8B 运行的采集汇总（400 题，深度 1，ρ = 1.0）。</li>
-        <li><code>supplementary_code/results/medqa_marginal_v1/counterfactual_records.jsonl</code>：每题的直接候选答案、三个强制一步分支的完整轨迹、选出的最短成功目标。</li>
-        <li><code>supplementary_code/results/medqa_marginal_v1/eval_dev200.jsonl</code>、<code>eval_dev200_report.json</code>：GRPO 继续训练后的 manager 在 MedQA 官方 dev 前 200 题（<code>example_id</code> 10178–10377）上的逐题轨迹与汇总。</li>
-        <li><code>supplementary_code/results/medqa_marginal_v1/eval_test200.jsonl</code>、<code>eval_test200_report.json</code>：同一 manager 在官方 test 前 200 题（<code>example_id</code> 11450–11649）上的逐题轨迹与汇总。</li>
-        <li><code>supplementary_code/scripts/summarize_main_results.py</code>、<code>scripts/analyze_results.py</code>：上面两条命令的脚本。</li>
-        <li><code>project_page/static/data/paper_tables.json</code>：论文表 1–10 与正文数字的转录，页面图表的数据来源。</li>
-        <li><code>project_page/static/data/main_results.json</code>：附录 B 数据在页面侧的副本。</li>
-      </ul>
     </div>
   </div>
 </section>
