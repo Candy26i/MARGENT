@@ -45,8 +45,6 @@
     <li><a href="#setup">Experimental setup</a></li>
     <li><a href="#results">Results</a></li>
     <li><a href="#diagnostics">Appendix diagnostics</a></li>
-    <li><a href="#limitations">Limitations</a></li>
-    <li><a href="#resources">Code</a></li>
   </ul>
 </aside>
 
@@ -490,71 +488,6 @@
     </div>
   </div>
 </section>
-
-<!-- ===== 7. Limitations ===== -->
-<section class="section" id="limitations">
-  <div class="container">
-    <h2>Limitations and scope</h2>
-    <div class="prose">
-      <p>The list follows the paper's own scope statements and its checklist answers.</p>
-      <ul>
-        <li><b>Fixed three-agent pool.</b> All results use Extractor, Reasoner and Verifier. Force-all uses the recorded scaffold order; no sub-agent order sweep exists.</li>
-        <li><b>Mostly single runs.</b> Only one MedQA SFT configuration was replicated with three additional seeds (80.5 ± 1.0 accuracy, 0.517 ± 0.043 calls). Every other task-level comparison is a single run, so the paper reports no comprehensive error bars or significance tests.</li>
-        <li><b>Development diagnostics vs locked evaluations.</b> Tables 4, 5, 7, 8 and 9 are operating points selected on the development pools. Only Table 3 is a locked evaluation, and GPQA-Diamond-100 doubled as its development (diagnostic) pool.</li>
-        <li><b>Forced-Verifier baseline is not candidate-matched.</b> The recorded implementation does not pass the same pre-call candidate to the Verifier.</li>
-        <li><b>End-to-end, not routing-only.</b> SFT updates the full manager, so candidate-to-final gains mix routing and revision. The paper reports no independently prompted single-model baseline; on AQuA-RAT it states that the scaffold candidate is much weaker than a plain-answer prompt.</li>
-        <li><b>No token or latency numbers.</b> These were not collected. Resource use is stated only in sub-agent calls.</li>
-        <li><b>Exported record is incomplete.</b> Optimizer settings, hardware, synthesis prompts, LoRA configuration, stable example ids and per-example outputs for paired confidence intervals are absent. The checklist answers "No" to full reproducibility details, statistical significance and compute resources.</li>
-        <li><b>GPQA is near chance.</b> The candidate is 17 points above 1/K, the call gap is close to indiscriminate calling, and the sample is too small to resolve a small difference. Selectivity is weakest there.</li>
-      </ul>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <caption>What the reported evidence supports.</caption>
-        <thead><tr><th>Claim</th><th>Evidence</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>One well-chosen call captures most of the measured oracle gain</td><td>Table 1: Gain@1 91.7% macro; third call adds zero on the two depth-3 collections</td><td><span class="status ok">supported on the collections</span></td></tr>
-          <tr><td>The learned manager beats its own candidate on collection-disjoint sets with few calls</td><td>Table 3: +17.1 pp at 0.526 calls, positive on all four tasks</td><td><span class="status ok">supported (end-to-end, single run)</span></td></tr>
-          <tr><td>About one selected call matches three forced calls</td><td>Table 5: 73.2% at 1.03 calls vs 73.6% at 3.0; GPQA remains 6.0 points behind</td><td><span class="status weak">development diagnostic</span></td></tr>
-          <tr><td>The policy calls on the right states</td><td>Positive call gaps on all tasks; matched-budget replay above the random interval only on MedQA</td><td><span class="status weak">partial</span></td></tr>
-          <tr><td>Gain over an independently prompted single-model baseline</td><td>Not reported in the paper</td><td><span class="status no">not shown</span></td></tr>
-          <tr><td>Token or latency savings</td><td>Not collected</td><td><span class="status no">not shown</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 8. Code and reproducibility ===== -->
-<section class="section" id="resources">
-  <div class="container">
-    <h2>Code and reproducibility</h2>
-    <div class="prose">
-      <p>The supplementary snapshot implements the method end to end behind one CLI, <code>python -m src.pipeline.cli &lt;stage&gt;</code>. The code predates the paper's final vocabulary: a sub-agent is an <code>advisor</code> and the candidate solution is the <code>DRAFT_ANSWER</code> line (<code>initial_draft</code> in evaluation rows). The table maps the stages to the paper's concepts.</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <caption>Pipeline stages and the paper concepts they implement.</caption>
-        <thead><tr><th>Stage</th><th>Paper concept</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><code>build_marginal_sft</code></td><td>Interventional collection (Sec. 3.2) and shortest-success selection (Sec. 3.3, Eq. 3 and 4)</td><td><code>--mv_max_depth</code> 1 to 3 is the search depth D; <code>--mv_max_commit_rescue_ratio</code> is ρ (0 = rescues only, −1 = keep every commit)</td></tr>
-          <tr><td><code>train_manager_sft</code></td><td>Marginal-value distillation (Sec. 3.3)</td><td>SFT of the full manager on <code>manager_sft_marginal.jsonl</code></td></tr>
-          <tr><td><code>eval_manager_tools</code></td><td>Learned delegate-or-commit policy</td><td>Report fields: <code>initial_draft_accuracy</code> = candidate, <code>avg_tool_calls</code>, <code>draft_conditioned_call_gap</code> = call gap, correction and corruption rates</td></tr>
-          <tr><td><code>eval_manager_forced --eval_forced_tools</code></td><td>Forced one Verifier call; force all three</td><td><code>verifier</code> or <code>extractor,reasoner,verifier</code></td></tr>
-          <tr><td><code>load_aqua_rat</code></td><td>The paper's fourth benchmark (AQuA-RAT, test split n = 254)</td><td>Added in the 2026-10-07 simplification; the GRPO continuation code (Appendix D) now lives on the <code>legacy</code> branch, tag <code>v0.1-full</code></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="prose">
-      <p>The repository was simplified to the method on 2026-10-07 (see <code>CHANGELOG.md</code>): the GRPO, reward-shaping, failure-recycling and cold-start code moved to the <code>legacy</code> branch, the 2,000-line stage file was split into four modules, duplicated helpers were merged, and an AQuA-RAT loader was added. One thing is still not in the snapshot: the paper's Qwen3.5-9B per-example records behind Tables 1 to 5, which were exported with the paper's dashboard. The two released record sets, the Appendix B predecessor diagnostic and the Appendix D 8B run, can be summarised without a GPU:</p>
-      <pre><code>cd supplementary_code
-python scripts/summarize_main_results.py                     # Appendix B: all 28 cells with Δ vs base and Δ vs cold start
-python scripts/analyze_results.py results/medqa_marginal_v1   # Appendix D 8B run: Wilson 95% intervals, exact McNemar tests</code></pre>
-      <p>The Chinese milestone report covers the code snapshot, the data-hygiene checks and the next steps: <a href="report.html">阶段实验报告 (report.html)</a>. The transcribed paper tables are at <a href="static/data/paper_tables.json">static/data/paper_tables.json</a>; the Appendix B record is at <a href="static/data/main_results.json">static/data/main_results.json</a>.</p>
-    </div>
-  </div>
-</section>
-
 
 </main>
 
