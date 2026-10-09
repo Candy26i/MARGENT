@@ -72,18 +72,17 @@ src/
                 subagent_stages.py, manager_stages.py and eval_stages.py;
                 context.py (output layout under outputs/<teacher_id>)
   utils/        jsonl I/O, caching, leakage audit, seeding
-scripts/        vLLM sub-agent server, GPQA split builder, OpenAI batch
-                generation, result analysis (stdlib only)
+scripts/        vLLM sub-agent server, GPQA split builder
 tests/          unit tests for the selection rule, chat rendering and the
                 AQuA-RAT loader (no GPU, no torch)
 docs/
   EXPERIMENTS.md  step-by-step protocol with gates and ablations
   figures/        overview figure
-results/        released records (see results/README.md)
 ```
 
-Removed legacy code: see the Appendix-diagnostic section below and
-`CHANGELOG.md`.
+The outcome-only GRPO continuation of the paper's Appendix D and the earlier
+cold-start/reward-shaping code are on the `legacy` branch, tag `v0.1-full`,
+and are not maintained.
 
 ## Installation
 
@@ -210,13 +209,6 @@ the same steps, their cache flags and a matching `--task_description`; the
 paper searches to depth 3 on MedQA and AQuA-RAT and to depth 2 on MMLU-Pro and
 GPQA (`docs/EXPERIMENTS.md` §9).
 
-### Appendix diagnostic: outcome-only GRPO
-
-The GRPO continuation, the ADC/CCR rewards, the failure-recycling "evolve"
-loop, the cold-start stages and the DeepSpeed configs are on the `legacy`
-branch (tag `v0.1-full`) and are not maintained; the main branch contains
-only the method.
-
 ## Pipeline stages
 
 | Stage | Purpose |
@@ -228,30 +220,14 @@ only the method.
 | `eval_subagents` | JSON / schema validity gate for sub-agents |
 | `build_marginal_sft` | same-state interventional collection and shortest-success selection |
 | `train_manager_sft` | manager distillation (or continuation from a checkpoint with `--manager_sft_init_adapter`); saves `manager_run_config.json` (the tool-binding wording) next to the checkpoint |
-| `eval_manager` | no-sub-agent answering; `--eval_sc_k K` gives a self-consistency baseline |
 | `eval_manager_tools` | the learned delegate-or-commit policy |
 | `eval_manager_forced` | fixed delegation sequences: always-Verifier, force-all, any subset |
 
 Defaults: `train_manager_sft` reads `marginal_value/manager_sft_marginal.jsonl`
-and writes `sft_marginal/` under `outputs/manager/<teacher_id>/`; the three
-`eval_manager*` stages default `--eval_manager_dir` to that `sft_marginal/`
-directory and also accept a full checkpoint directory or a Hugging Face id.
-
-## Released results
-
-`results/README.md` describes the two record sets in this snapshot: the
-predecessor scaling diagnostic (paper Appendix B) and an 8B outcome-only GRPO
-continuation with its interventional collection (paper Appendix D; produced
-with the GRPO code that now lives on the `legacy` branch). Both can be
-summarised without a GPU:
-
-```bash
-python scripts/summarize_main_results.py                     # Appendix B table
-python scripts/analyze_results.py results/medqa_marginal_v1   # Appendix D run, with Wilson CIs and McNemar tests
-```
-
-The paper's main Qwen3.5-9B records (Tables 1–5) are exported with its
-dashboard and are not part of this snapshot.
+and writes `sft_marginal/` under `outputs/manager/<teacher_id>/`;
+`eval_manager_tools` and `eval_manager_forced` default `--eval_manager_dir` to
+that `sft_marginal/` directory and also accept a full checkpoint directory or a
+Hugging Face id.
 
 ## Tests
 

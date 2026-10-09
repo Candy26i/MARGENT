@@ -39,7 +39,7 @@ from .subagent_stages import (
     run_train_subagent,
 )
 from .manager_stages import run_build_marginal_sft, run_train_manager_sft
-from .eval_stages import run_eval_manager, run_eval_manager_forced, run_eval_manager_tools
+from .eval_stages import run_eval_manager_forced, run_eval_manager_tools
 
 
 def _parse_args() -> argparse.Namespace:
@@ -56,7 +56,6 @@ def _parse_args() -> argparse.Namespace:
         "eval_subagents",
         "build_marginal_sft",
         "train_manager_sft",
-        "eval_manager",
         "eval_manager_tools",
         "eval_manager_forced",
     ])
@@ -219,7 +218,7 @@ def _parse_args() -> argparse.Namespace:
     msft_group.add_argument("--manager_sft_epochs", type=int, default=1)
 
     # Eval
-    eval_group = parser.add_argument_group("eval", "eval_subagents / eval_manager / eval_manager_tools / eval_manager_forced")
+    eval_group = parser.add_argument_group("eval", "eval_subagents / eval_manager_tools / eval_manager_forced")
     eval_group.add_argument("--eval_n_samples", type=int, default=100)
     eval_group.add_argument("--eval_kinds", type=str, default="extractor,reasoner,verifier")
     eval_group.add_argument("--eval_manager_dir", type=str, default="")
@@ -233,12 +232,6 @@ def _parse_args() -> argparse.Namespace:
                                  "baselines and the per-question stopping oracle.")
     eval_group.add_argument("--eval_out_tag", type=str, default="",
                             help="Optional filename tag for eval_manager_forced outputs.")
-    eval_group.add_argument("--eval_sc_k", type=int, default=1,
-                            help="Self-consistency baseline for eval_manager: sample k completions "
-                                 "and majority-vote (k=1 disables; use as the matched-compute "
-                                 "resampling control).")
-    eval_group.add_argument("--eval_sc_temperature", type=float, default=0.7,
-                            help="Sampling temperature for the self-consistency baseline.")
 
     return parser.parse_args()
 
@@ -560,20 +553,6 @@ def main() -> None:
             n_samples=args.eval_n_samples,
         )
         print("[EVAL_SUBAGENTS]", result["by_agent"])
-        return
-
-    if args.stage == "eval_manager":
-        result = run_eval_manager(
-            ctx=ctx, rows=_load_eval_rows(args),
-            manager_dir=(args.eval_manager_dir or None),
-            n_samples=args.eval_n_samples,
-            temperature=args.eval_temperature,
-            max_new_tokens=args.eval_max_new_tokens,
-            task_description=args.task_description,
-            sc_k=args.eval_sc_k,
-            sc_temperature=args.eval_sc_temperature,
-        )
-        print("[EVAL_MANAGER]", result)
         return
 
     if args.stage == "eval_manager_forced":

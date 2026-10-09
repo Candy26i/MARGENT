@@ -9,7 +9,7 @@ from .subagent_stages import (
     run_train_subagent,
 )
 from .manager_stages import run_build_marginal_sft, run_train_manager_sft
-from .eval_stages import run_eval_manager, run_eval_manager_forced, run_eval_manager_tools
+from .eval_stages import run_eval_manager_forced, run_eval_manager_tools
 
 __all__ = [
     "StageContext",
@@ -24,7 +24,6 @@ __all__ = [
     "run_eval_subagents",
     "run_build_marginal_sft",
     "run_train_manager_sft",
-    "run_eval_manager",
     "run_eval_manager_tools",
     "run_eval_manager_forced",
 ]

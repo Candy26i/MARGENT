@@ -20,7 +20,3 @@ jobs:
         run: pip install pyflakes && python -m pyflakes src scripts tests
       - name: Check that every Python file parses
         run: python -c "import ast, glob; [ast.parse(open(f).read(), f) for f in glob.glob('**/*.py', recursive=True)]; print('ok')"
-      - name: Summarise released results (stdlib only)
-        run: |
-          python scripts/summarize_main_results.py > /dev/null
-          python scripts/analyze_results.py results/medqa_marginal_v1 > /dev/null

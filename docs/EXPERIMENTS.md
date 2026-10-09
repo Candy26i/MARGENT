@@ -6,10 +6,10 @@
 This is the protocol for the paper's method. The manager is trained by
 supervised distillation only: `build_marginal_sft` collects same-state
 counterfactual branches, `train_manager_sft` fine-tunes the manager on the
-selected decisions, and the `eval_manager*` stages measure the result. There
-is no reinforcement-learning step. The outcome-only GRPO continuation
-discussed in the paper's Appendix D lives on the `legacy` branch (tag
-`v0.1-full`) and is not part of this protocol.
+selected decisions, and `eval_manager_tools` / `eval_manager_forced` measure
+the result. There is no reinforcement-learning step. The outcome-only GRPO
+continuation discussed in the paper's Appendix D lives on the `legacy` branch
+(tag `v0.1-full`) and is not part of this protocol.
 
 The central training signal is built from one model-generated
 `DRAFT_ANSWER`: training-time interventions compare `COMMIT` with each advisor
@@ -118,18 +118,14 @@ Record `json_ok_rate` and `schema_ok_rate` for every advisor
 (`outputs/eval/$TEACHER_ID/subagent_eval_report.json`). Do not continue if
 schema validity is below 95%; inspect advisor prompts/checkpoints first.
 
-Measure the manager's direct baseline on dev:
-
-```bash
-python -m src.pipeline.cli eval_manager \
-  --base_model "$BASE_MODEL" \
-  --teacher_id "$TEACHER_ID" \
-  --medqa_normalized_cache "$MEDQA_CACHE" \
-  --train_size "$TRAIN_SIZE" --dev_size "$DEV_SIZE" --test_size 0 \
-  --eval_n_samples "$DEV_SIZE" \
-  --eval_manager_dir "$BASE_MODEL" \
-  --task_description "$TASK_DESC"
-```
+The manager's direct baseline needs no separate stage. On the collection pool
+it is `direct_accuracy` in `marginal_value_report.json` (Step 1): the accuracy
+of the temperature-0 candidate every branch starts from, written by
+`build_marginal_sft`. On dev and test it is `initial_draft_accuracy` in the
+`eval_manager_tools` report (Step 4): the accuracy of the candidate the
+manager states before any delegation, measured on the same questions as the
+policy. The `none` sequence of Step 5 is the zero-delegation run of whichever
+manager `--eval_manager_dir` names.
 
 ## 4. Step 1: cheap counterfactual smoke test
 
@@ -397,22 +393,6 @@ for SEQ in verifier "extractor,reasoner,verifier"; do
 done
 ```
 
-The matched-compute resampling control is `eval_manager` with
-self-consistency (sample k completions, majority vote), using the same
-manager directory:
-
-```bash
-python -m src.pipeline.cli eval_manager \
-  --base_model "$BASE_MODEL" \
-  --teacher_id "$TEACHER_ID" \
-  --medqa_normalized_cache "$MEDQA_CACHE" \
-  --train_size "$TRAIN_SIZE" --dev_size "$DEV_SIZE" --test_size 0 \
-  --eval_n_samples "$DEV_SIZE" \
-  --eval_manager_dir "$MV_ADAPTER" \
-  --eval_sc_k 4 --eval_sc_temperature 0.7 \
-  --task_description "$TASK_DESC"
-```
-
 ## 9. Step 6: locked evaluation and the other benchmarks
 
 After freezing the selected manager, run exactly once on the MedQA test split.
@@ -477,14 +457,15 @@ single test run of each benchmark.
 
 Main baselines:
 
-1. base manager, direct answer (`eval_manager`);
+1. base manager, direct answer: the candidate accuracy, `initial_draft_accuracy`
+   in the `eval_manager_tools` report and `direct_accuracy` in the collection
+   report (Step 0);
 2. base manager + all advisors forced (`eval_manager_forced`, three-advisor
    sequence);
 3. always-Verifier (`eval_manager_forced --eval_forced_tools verifier`);
 4. random advisor routing with matched average calls (mix the `none` and
    fixed-k forced rows per question at the policy's call rate);
-5. self-consistency at matched compute (`eval_manager --eval_sc_k`);
-6. marginal-value SFT (main method, `eval_manager_tools`).
+5. marginal-value SFT (main method, `eval_manager_tools`).
 
 Core ablations:
 

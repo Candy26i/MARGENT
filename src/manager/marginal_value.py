@@ -18,8 +18,8 @@ learned here from paired counterfactuals rather than from a global per-call
 penalty.
 
 "advisor" in the report keys (``by_advisor_one_step``, ``available_advisors``)
-and in older docs = sub-agent in the paper; the keys are kept so released
-reports and scripts/analyze_results.py still read.
+and in older docs = sub-agent in the paper; the keys are kept so earlier
+reports still read.
 """
 from __future__ import annotations
 
