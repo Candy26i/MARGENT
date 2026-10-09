@@ -119,7 +119,7 @@ Record `json_ok_rate` and `schema_ok_rate` for every advisor
 schema validity is below 95%; inspect advisor prompts/checkpoints first.
 
 The manager's direct baseline needs no separate stage. On the collection pool
-it is `direct_accuracy` in `marginal_value_report.json` (Step 1): the accuracy
+it is `direct_accuracy` in `marginal_value_report.json` (Step 2): the accuracy
 of the temperature-0 candidate every branch starts from, written by
 `build_marginal_sft`. On dev and test it is `initial_draft_accuracy` in the
 `eval_manager_tools` report (Step 4): the accuracy of the candidate the
@@ -374,11 +374,12 @@ Outputs go to `outputs/eval/$TEACHER_ID/manager_forced_<sequence>.jsonl` and
 
 The same sequences with the untrained base manager (`--eval_manager_dir
 "$BASE_MODEL"`: a Hugging Face id or a full checkpoint directory loads without
-an adapter) give the "base manager + forced advisors" baselines of Section 10;
-tag the outputs so they do not overwrite the trained manager's:
+an adapter) give the base-manager baselines of Section 10: `none` is the base
+manager's direct answer, the other sequences are "base manager + forced
+advisors"; tag the outputs so they do not overwrite the trained manager's:
 
 ```bash
-for SEQ in verifier "extractor,reasoner,verifier"; do
+for SEQ in none verifier "extractor,reasoner,verifier"; do
   python -m src.pipeline.cli eval_manager_forced \
     --base_model "$BASE_MODEL" \
     --teacher_id "$TEACHER_ID" \
@@ -457,9 +458,11 @@ single test run of each benchmark.
 
 Main baselines:
 
-1. base manager, direct answer: the candidate accuracy, `initial_draft_accuracy`
-   in the `eval_manager_tools` report and `direct_accuracy` in the collection
-   report (Step 0);
+1. base manager, direct answer: `direct_accuracy` in the collection report
+   (Step 0, collected with `--mv_manager_dir "$BASE_MODEL"`) and, on dev, the
+   `none` sequence of the base-manager loop of Step 5; `initial_draft_accuracy`
+   in an `eval_manager_tools` report is the candidate accuracy of the manager
+   that run evaluated, i.e. the trained policy's own no-delegation number;
 2. base manager + all advisors forced (`eval_manager_forced`, three-advisor
    sequence);
 3. always-Verifier (`eval_manager_forced --eval_forced_tools verifier`);
