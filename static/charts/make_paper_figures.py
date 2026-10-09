@@ -2,8 +2,9 @@
 """Paper figures for the MARGENT project page (Tables 1-5, 8-10 of the submission).
 
 Reads ``static/data/paper_tables.json`` (the paper's tables, transcribed) and,
-for the released 8B traces, ``supplementary_code/results/medqa_marginal_v1/
-eval_dev200.jsonl`` and ``eval_test200.jsonl``.  Nothing is typed in by hand
+for the released 8B traces, ``static/data/medqa_marginal_v1/eval_dev200.jsonl``
+and ``eval_test200.jsonl`` (the records of the MARGENT ``legacy`` branch, tag
+``v0.1-full``).  Nothing is typed in by hand
 except the numbers the paper states in prose, which are used as checks: every
 derived quantity (Gain@1, macro means, gains, call reductions, the 20:1 ratio,
 the released call-count distribution) is recomputed here and asserted against
@@ -34,9 +35,8 @@ from matplotlib.patches import Patch
 from matplotlib.transforms import offset_copy
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]  # research_milestones/
 DATA = HERE.parent / "data" / "paper_tables.json"
-RUN_DIR = ROOT / "supplementary_code" / "results" / "medqa_marginal_v1"
+RUN_DIR = HERE.parent / "data" / "medqa_marginal_v1"
 sys.path.insert(0, str(HERE))
 import chart_style as cs  # noqa: E402
 

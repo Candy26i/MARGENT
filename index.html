@@ -452,7 +452,7 @@
     </div>
     <div class="prose">
       <h4>The Appendix D 8B run in the released snapshot</h4>
-      <p>The supplementary snapshot contains a Qwen3-8B GRPO run (<code>results/medqa_marginal_v1/</code>, checkpoint <code>grpo_binary_mv2</code>) whose mean test calls, 2.985, match the 2.98 of the "MedQA, 8B manager" row. The paper does not name the run, and the accuracy records of the Table 10 runs are absent from its exported record, so the accuracies below come from the snapshot only. On the 200 dev questions: candidate 55.5%, final 67.5%, 3.000 calls per question, 36 candidates corrected, 12 corrupted, exact McNemar p = 7.2e-4 against the candidate. On the 200 test questions: candidate 63.5%, final 76.5%, 2.985 calls, 38 corrected, 12 corrupted, p = 3.1e-4. Its call rate is 100% for both wrong and correct candidates, so the call gap is 0. The sub-agents help; the manager simply never learned to stop.</p>
+      <p>The <code>legacy</code> branch of the repository (tag <code>v0.1-full</code>) keeps a Qwen3-8B GRPO run (<code>results/medqa_marginal_v1/</code>, checkpoint <code>grpo_binary_mv2</code>) whose mean test calls, 2.985, match the 2.98 of the "MedQA, 8B manager" row. The paper does not name the run, and the accuracy records of the Table 10 runs are absent from its exported record, so the accuracies below come from those records only. On the 200 dev questions: candidate 55.5%, final 67.5%, 3.000 calls per question, 36 candidates corrected, 12 corrupted, exact McNemar p = 7.2e-4 against the candidate. On the 200 test questions: candidate 63.5%, final 76.5%, 2.985 calls, 38 corrected, 12 corrupted, p = 3.1e-4. Its call rate is 100% for both wrong and correct candidates, so the call gap is 0. The sub-agents help; the manager simply never learned to stop.</p>
     </div>
     <div class="box">
       <figure>
@@ -480,7 +480,7 @@
     <div class="box">
       <figure>
         <img src="static/images/fig_main_results.svg" alt="Four bar-chart panels, one per benchmark (MedQA, LegalBench, GPQA, MMLU-Pro). For each manager size (4B, 8B, 9B) three bars show base accuracy, cold-start SFT accuracy and the best GRPO cell, with one-standard-error bars and the best cell name labelled.">
-        <figcaption><b>Figure 10.</b> The predecessor pipeline (Appendix B data, <code>results/predecessor_scaling/main_results.json</code>): base, cold-start SFT and best GRPO cell per benchmark and manager size, with ±1 binomial SE. Table 6 is the GRPO bar minus the base bar for MedQA, GPQA and MMLU-Pro. LegalBench appears in the released record but was dropped from the paper. This diagnostic motivated same-state collection; it is not a main comparison.</figcaption>
+        <figcaption><b>Figure 10.</b> The predecessor pipeline (Appendix B data: <code>results/predecessor_scaling/main_results.json</code> on the <code>legacy</code> branch, tag <code>v0.1-full</code>): base, cold-start SFT and best GRPO cell per benchmark and manager size, with ±1 binomial SE. Table 6 is the GRPO bar minus the base bar for MedQA, GPQA and MMLU-Pro. LegalBench appears in the released record but was dropped from the paper. This diagnostic motivated same-state collection; it is not a main comparison.</figcaption>
       </figure>
     </div>
     <div class="prose">

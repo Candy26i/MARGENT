@@ -10,6 +10,11 @@ Value of Delegation in Agentic Systems*.
   `make_medqa_figures.py`; needs matplotlib)
 - `static/data/paper_tables.json` — every table of the paper, transcribed
 - `static/data/main_results.json` — Appendix B predecessor diagnostic
+  (`results/predecessor_scaling/main_results.json` of the MARGENT `legacy`
+  branch, tag `v0.1-full`)
+- `static/data/medqa_marginal_v1/` — records of the Appendix D Qwen3-8B run
+  (`results/medqa_marginal_v1/` of the same `legacy` branch), read by
+  `make_medqa_figures.py` and `make_paper_figures.py`
 
 Preview locally:
 

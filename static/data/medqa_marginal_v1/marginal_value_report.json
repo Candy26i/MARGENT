@@ -1,0 +1,62 @@
+{
+  "n_examples": 400,
+  "direct_valid_rate": 1.0,
+  "direct_accuracy": 0.55,
+  "oracle_accuracy": 0.91,
+  "oracle_gain": 0.36,
+  "n_rescued": 144,
+  "n_unsolved": 36,
+  "preferred_depth_counts": {
+    "0": 220,
+    "1": 144
+  },
+  "preferred_first_tool_counts": {
+    "verifier": 86,
+    "reasoner": 51,
+    "extractor": 7
+  },
+  "by_advisor_one_step": {
+    "extractor": {
+      "n": 400,
+      "rescue_count": 25,
+      "corruption_count": 11,
+      "both_correct_count": 209,
+      "both_wrong_count": 155,
+      "rescue_rate": 0.0625,
+      "corruption_rate": 0.0275,
+      "net_marginal_rate": 0.035
+    },
+    "reasoner": {
+      "n": 400,
+      "rescue_count": 100,
+      "corruption_count": 5,
+      "both_correct_count": 215,
+      "both_wrong_count": 80,
+      "rescue_rate": 0.25,
+      "corruption_rate": 0.0125,
+      "net_marginal_rate": 0.2375
+    },
+    "verifier": {
+      "n": 400,
+      "rescue_count": 127,
+      "corruption_count": 9,
+      "both_correct_count": 211,
+      "both_wrong_count": 53,
+      "rescue_rate": 0.3175,
+      "corruption_rate": 0.0225,
+      "net_marginal_rate": 0.295
+    }
+  },
+  "n_selected_decisions": 288,
+  "n_selected_rescue_decisions": 144,
+  "n_selected_commit_decisions": 144,
+  "n_sft_turns": 432,
+  "max_depth": 1,
+  "max_commit_rescue_ratio": 1.0,
+  "available_advisors": [
+    "extractor",
+    "reasoner",
+    "verifier"
+  ],
+  "manager_dir": "Qwen/Qwen3-8B"
+}

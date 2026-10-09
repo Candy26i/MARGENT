@@ -7,9 +7,15 @@ SVG so the figures render identically everywhere.
 Colour roles are fixed here so the same thing has the same colour in every
 figure.  The hues are the validated categorical palette of the dataviz skill
 (adjacent-pair order is colour-blind safe).
+
+``wilson`` and ``mcnemar_exact`` are the interval and the test the MedQA
+figures report; they are the functions of ``scripts/analyze_results.py`` on the
+MARGENT ``legacy`` branch (tag ``v0.1-full``), copied here so the figures stay
+regenerable from this directory alone.
 """
 from __future__ import annotations
 
+import math
 import re
 from pathlib import Path
 
@@ -112,3 +118,25 @@ def save(fig, name: str) -> None:
     fig.savefig(OUT / f"{name}.png", dpi=200)
     plt.close(fig)
     print(f"saved {name}.svg / .png")
+
+
+# statistics (stdlib only)
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for k successes out of n."""
+    if n == 0:
+        return (float("nan"), float("nan"))
+    p = k / n
+    denom = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return (centre - half, centre + half)
+
+
+def mcnemar_exact(b: int, c: int) -> float:
+    """Two-sided exact McNemar p-value for discordant counts b and c."""
+    n = b + c
+    if n == 0:
+        return 1.0
+    k = min(b, c)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n
+    return min(1.0, 2 * tail)

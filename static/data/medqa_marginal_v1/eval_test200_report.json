@@ -1,0 +1,26 @@
+{
+  "teacher_id": "medqa_marginal_v1",
+  "manager_dir": "outputs/manager/medqa_marginal_v1/grpo_binary_mv2",
+  "n_samples": 200,
+  "accuracy": 0.765,
+  "valid_answer_rate": 1.0,
+  "tool_call_rate": 1.0,
+  "avg_tool_calls": 2.985,
+  "tool_counts": {
+    "extractor_tool": 198,
+    "reasoner_tool": 199,
+    "verifier_tool": 200
+  },
+  "malformed_tool_calls": 0,
+  "initial_draft_coverage": 1.0,
+  "initial_draft_accuracy": 0.635,
+  "call_rate_given_draft_wrong": 1.0,
+  "call_rate_given_draft_correct": 1.0,
+  "draft_conditioned_call_gap": 0.0,
+  "correction_rate": 0.19,
+  "corruption_rate": 0.06,
+  "binding_mode": "environment",
+  "subagents": [
+    "remote"
+  ]
+}

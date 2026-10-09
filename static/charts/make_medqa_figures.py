@@ -7,8 +7,9 @@
   fig_routing_behavior (a) draft -> final transition classes on dev and test
                        (b) advisor-call count distribution on dev and test
 
-Everything is computed from the raw files in
-``supplementary_code/results/medqa_marginal_v1/``; nothing is typed in by hand.
+Everything is computed from the raw files in ``static/data/medqa_marginal_v1/``
+(the ``results/medqa_marginal_v1/`` records of the MARGENT ``legacy`` branch,
+tag ``v0.1-full``); nothing is typed in by hand.
 The computed values are asserted against the numbers in the content spec and
 both are printed, so a silent drift in the data would fail loudly.
 
@@ -17,24 +18,20 @@ Run:  /opt/anaconda3/bin/python3 static/charts/make_medqa_figures.py
 from __future__ import annotations
 
 import json
-import math
 import sys
 from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]  # research_milestones/
-RUN_DIR = ROOT / "supplementary_code" / "results" / "medqa_marginal_v1"
+RUN_DIR = HERE.parent / "data" / "medqa_marginal_v1"
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(ROOT / "supplementary_code" / "scripts"))
 
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
-from analyze_results import mcnemar_exact, wilson  # noqa: E402  (stdlib only)
 from chart_style import (  # noqa: E402
-    BLUE, GRID, INK, INK2, MUTED, NEUTRAL, ORANGE, RULE, STATUS, SURFACE,
-    apply_style, save, xgrid, ygrid,
+    BLUE, INK, INK2, MUTED, NEUTRAL, STATUS, SURFACE,
+    apply_style, mcnemar_exact, save, wilson, xgrid,
 )
 
 ADVISORS = ("extractor", "reasoner", "verifier")

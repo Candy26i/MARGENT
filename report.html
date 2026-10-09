@@ -107,12 +107,12 @@
         <li><b>一次调用的价值取决于调用谁。</b>净边际价值 = 救回比例减损坏比例。同一个 Reasoner 在 MedQA 是 +6.8 pp，在 AQuA-RAT 是 −4.3 pp。Extractor 在四个任务上都接近零或为负。Verifier 均值最大，但不能替代其他角色：12 道 MedQA 和 9 道 MMLU-Pro 题被 Reasoner 救回而 Verifier 救不回。<span class="tag coll">采集集</span></li>
         <li><b>学到的策略在四个与采集集不相交的评测上都高于自己的候选答案</b>：宏平均 +17.1 pp，0.526 次调用 / 题。其中 GPQA-Diamond 100 同时是它的开发池，不是独立的锁定集。论文自己的限定：这是同一 scaffold（带子智能体工具的推理框架）内的端到端差异，不是相对独立单模型基线的增益。<span class="tag lock">不相交评测</span></li>
         <li><b>约一次选择性调用 ≈ 三次强制调用。</b>操作点 = 一个训练好的 checkpoint 在开发池上得到的「调用次数、准确率」这一对数字。选出的操作点宏平均 73.2%@1.03 次，强制全部三个子智能体 73.6%@3.0 次。MMLU-Pro 持平（71.5%），AQuA-RAT 反超（81.1% vs 75.2%），GPQA 仍落后 6.0 pp。<span class="tag dev">开发集诊断</span></li>
-        <li><b>候选答案本身对委派有用；只看结果的 RL 会学成「全都调用」。</b>AQuA-RAT 上只把传给 Verifier 的候选答案置空，准确率 81.1% → 74.0%。<span class="tag dev">开发集诊断</span> 反过来，从 MARGENT 的 SFT checkpoint（论文只称其为「选择性 SFT」checkpoint，没有进一步说明；按本快照 results/README.md，8B 运行是从同状态采集蒸馏出的 SFT 继续训练）出发、只用终端正确性奖励的 GRPO 继续训练，8B 与 9B 分别走到 2.98 和 3.00 次调用 / 题。这两次运行没有准确率记录，所以只能说明调用行为，不能说明准确率损失。附录 D 诊断；论文只说明是 MedQA，没有给出评测切分和题数。</li>
+        <li><b>候选答案本身对委派有用；只看结果的 RL 会学成「全都调用」。</b>AQuA-RAT 上只把传给 Verifier 的候选答案置空，准确率 81.1% → 74.0%。<span class="tag dev">开发集诊断</span> 反过来，从 MARGENT 的 SFT checkpoint（论文只称其为「选择性 SFT」checkpoint，没有进一步说明；按 legacy 分支（tag v0.1-full）的 results/README.md，8B 运行是从同状态采集蒸馏出的 SFT 继续训练）出发、只用终端正确性奖励的 GRPO 继续训练，8B 与 9B 分别走到 2.98 和 3.00 次调用 / 题。这两次运行没有准确率记录，所以只能说明调用行为，不能说明准确率损失。附录 D 诊断；论文只说明是 MedQA，没有给出评测切分和题数。</li>
       </ol>
       <h3>本阶段产出</h3>
       <ul>
         <li><b>论文投稿：</b>NeurIPS 2026 投稿稿《MARGENT: Measuring the Marginal Value of Delegation in Agentic Systems》，匿名；前 12 页为正文、参考文献和附录 A–E，其余为 checklist。</li>
-        <li><b>代码整理：</b><code>supplementary_code/</code>。README 按论文重写并附「论文 ↔ 代码」术语对照表；<code>results/main</code> 改名 <code>results/predecessor_scaling</code>；<code>docs/EXPERIMENTS.md</code> 加范围说明（GRPO 只是诊断）；论文图 1 入库。</li>
+        <li><b>代码整理：</b><code>supplementary_code/</code>。README 按论文重写并附「论文 ↔ 代码」术语对照表；附录 B/D 的结果记录（<code>results/</code>）和分析脚本只保留在 <code>legacy</code> 分支（tag <code>v0.1-full</code>），主分支只含论文方法的代码；<code>docs/EXPERIMENTS.md</code> 加范围说明（GRPO 只是诊断）；论文图 1 入库。</li>
         <li><b>页面：</b>英文项目页 <code>index.html</code>、本报告、<code>static/data/paper_tables.json</code>（论文全部表格的转录，是页面图表的数据来源）。</li>
       </ul>
     </div>
@@ -445,7 +445,7 @@
     <h2>5. 附录诊断</h2>
     <div class="callout">
       <span class="label">范围</span>
-      <p>本节的两组结果来自论文附录 B 和 D。它们是动机性诊断，不是主结果：GRPO 不是论文的方法；4B/8B/9B 的表格是在边际价值实验之前做的前期实验。本快照保存的结果文件只覆盖这两组诊断，不包含论文表 1–5 的 9B 主实验记录。</p>
+      <p>本节的两组结果来自论文附录 B 和 D。它们是动机性诊断，不是主结果：GRPO 不是论文的方法；4B/8B/9B 的表格是在边际价值实验之前做的前期实验。快照保存的结果文件（<code>legacy</code> 分支，tag <code>v0.1-full</code>）只覆盖这两组诊断，不包含论文表 1–5 的 9B 主实验记录。</p>
     </div>
 
     <h3 id="diag-grpo">5.1 只用结果奖励的 GRPO 退化到三次调用（附录 D）</h3>
@@ -468,13 +468,13 @@
         <figcaption><b>图 8.</b> 左：GRPO 继续训练的每题调用次数（论文表 10），参考线为 MARGENT SFT 的 MedQA 三种子均值 0.517 ± 0.043 和与采集集不相交的评测的宏平均 0.526（论文表 3）。右：本快照保存的 8B GRPO 运行（对应附录 D 的 8B 行）的调用次数分布，dev {3: 200}，test {1: 1, 2: 1, 3: 198}。</figcaption>
       </figure>
     </div>
-    <h4>本快照中保存的 8B 轨迹（<code>results/medqa_marginal_v1/</code>）</h4>
+    <h4>legacy 分支（tag <code>v0.1-full</code>）保存的 8B 轨迹（<code>results/medqa_marginal_v1/</code>）</h4>
     <div class="prose">
-      <p><code>results/README.md</code> 把这组文件对应到附录 D 的「MedQA，8B manager」运行：Qwen3-8B manager，先做深度 1 的同状态干预采集，再从中蒸馏，然后用只看结果的 GRPO 继续训练（checkpoint 目录 <code>grpo_binary_mv2</code>）。test 的 2.985 次调用与表 10 的 2.98 一致；是否为同一个 checkpoint 仍待作者确认。它不是正文报告的 MARGENT SFT 策略。</p>
+      <p>该分支的 <code>results/README.md</code> 把这组文件对应到附录 D 的「MedQA，8B manager」运行：Qwen3-8B manager，先做深度 1 的同状态干预采集，再从中蒸馏，然后用只看结果的 GRPO 继续训练（checkpoint 目录 <code>grpo_binary_mv2</code>）。test 的 2.985 次调用与表 10 的 2.98 一致；是否为同一个 checkpoint 仍待作者确认。它不是正文报告的 MARGENT SFT 策略。</p>
     </div>
     <div class="table-wrap">
       <table>
-        <caption>表 R5. GRPO 继续训练后的 8B manager 在 MedQA 官方 dev 和 test 前 200 题上的评测（<code>eval_dev200_report.json</code>、<code>eval_test200_report.json</code>；区间与 p 值由 <code>scripts/analyze_results.py</code> 算出）。</caption>
+        <caption>表 R5. GRPO 继续训练后的 8B manager 在 MedQA 官方 dev 和 test 前 200 题上的评测（<code>eval_dev200_report.json</code>、<code>eval_test200_report.json</code>；区间与 p 值由 legacy 分支的 <code>scripts/analyze_results.py</code> 算出）。</caption>
         <thead><tr><th>指标</th><th class="num">Dev（n = 200）</th><th class="num">Test（n = 200）</th></tr></thead>
         <tbody>
           <tr><td>候选答案准确率 % [Wilson 95%]</td><td class="num">55.5 [48.6, 62.2]</td><td class="num">63.5 [56.6, 69.9]</td></tr>
@@ -528,7 +528,7 @@
     <div class="box">
       <figure>
         <img src="static/images/fig_main_results.svg" alt="四个 benchmark 各一面板，每个 manager 规模三根柱：base 直答、冷启动 SFT、最好的 GRPO 格子，带二项标准误。LegalBench 面板在论文中未使用。" width="1700" height="1262">
-        <figcaption><b>图 11.</b> 前期实验的全部数据（<code>results/predecessor_scaling/main_results.json</code>）：base 直答、冷启动 SFT、最好的 GRPO 格子，按 benchmark 和 manager 规模。误差棒 ±1 二项标准误。LegalBench 在图中保留，但论文已把它去掉；表 6 的数值等于每面板「最好 GRPO 格子」减「base」。图中 advisor = 子智能体；G = 通用子智能体，S = 任务专用子智能体，kgen = GRPO 组大小。</figcaption>
+        <figcaption><b>图 11.</b> 前期实验的全部数据（<code>results/predecessor_scaling/main_results.json</code>，legacy 分支，tag <code>v0.1-full</code>）：base 直答、冷启动 SFT、最好的 GRPO 格子，按 benchmark 和 manager 规模。误差棒 ±1 二项标准误。LegalBench 在图中保留，但论文已把它去掉；表 6 的数值等于每面板「最好 GRPO 格子」减「base」。图中 advisor = 子智能体；G = 通用子智能体，S = 任务专用子智能体，kgen = GRPO 组大小。</figcaption>
       </figure>
     </div>
     <div class="prose">
