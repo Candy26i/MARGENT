@@ -201,6 +201,12 @@
     <h2>4. 主要结果</h2>
 
     <h3 id="results-oracle">4.1 一次委派之后还有多少价值可拿？<span class="tag coll">采集集</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_oracle_depth.svg" alt="每个任务三根柱：直接提交、最好的一次调用、测得的最好，组上方标 Gain@1。">
+        <figcaption><b>图 2.</b> 按最大委派深度的测得 oracle 准确率（论文表 1）：直接提交 A<sub>0</sub>、最好的一次调用 A<sub>1</sub>、测得最好 A<sub>D</sub>，组上方为 Gain@1。每个任务上一次调用都拿到大部分可测得增益。</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>论文表 1. 按最大委派深度的测得 oracle 准确率（%）。每行来自同一个采集集。</caption>
@@ -219,6 +225,12 @@
     </div>
 
     <h3 id="results-roles">4.2 一次调用的价值取决于调用谁<span class="tag coll">采集集</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_net_marginal_value.svg" alt="四个任务乘三个子智能体的净边际价值，单位 pp，带零线。">
+        <figcaption><b>图 3.</b> 一次强制调用的净边际价值 100·Δ̄<sub>a</sub>（pp，论文表 2）。Verifier 在四个任务上都最大；Extractor 接近零或为负。</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>论文表 2. 一次强制调用的净边际价值 100·Δ̄<sub>a</sub>（pp）。来自强制的一步分支。</caption>
@@ -236,6 +248,12 @@
     </div>
 
     <h3 id="results-disjoint">4.3 与采集集不相交的评测<span class="tag lock">不相交评测</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_disjoint_eval.svg" alt="每个任务一对柱：候选答案准确率与 MARGENT 最终准确率；另一面板为每题调用次数。">
+        <figcaption><b>图 4.</b> 与采集集不相交的评测（论文表 3）：同一个 manager 的候选答案 vs MARGENT 最终答案，以及每题平均调用次数。</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>论文表 3. 与采集集不相交的评测。MedQA、MMLU-Pro、AQuA-RAT 用最终评测前固定的 checkpoint；GPQA-Diamond-100 同时是它的开发池。「候选答案」是同一个 manager 在第一次委派前会提交的答案。</caption>
@@ -258,6 +276,12 @@
     </div>
 
     <h3 id="results-calls">4.4 更少的调用，同样的准确率<span class="tag dev">开发集诊断</span></h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_accuracy_vs_calls.svg" alt="四个任务各一面板：准确率对每题调用次数，含低调用与选出的 MARGENT 操作点、总是 Verifier、强制全部。">
+        <figcaption><b>图 5.</b> 开发池上准确率 vs 每题调用次数（论文表 4 与表 5）。蓝色：MARGENT 从低调用策略到选出的操作点；橙色菱形：强制一次 Verifier；紫色方块：强制全部三个。约一次选择性调用追平三次强制调用。开发集诊断。</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>论文表 5. 开发集操作点：同一个 manager 和子智能体池，按验证集选出的诊断结果，不是额外的留出测试。</caption>
@@ -279,6 +303,12 @@
     <h3 id="results-states">4.5 调用差与提交/救回比 ρ<span class="tag dev">开发集诊断</span></h3>
     <div class="prose">
       <p>调用差 = P(委派 | 候选答案错) − P(委派 | 候选答案对)，在选出的开发集操作点上四个任务都为正：MedQA 0.381、MMLU-Pro 0.296、GPQA 0.067、AQuA-RAT 0.102。匹配预算重放（固定调用的角色和次数，题目随机重抽 2,000 次）中，MedQA 策略选中的子集达到 82.0%，高于随机区间 [75.0, 81.0]；MMLU-Pro 和 GPQA 在区间内。</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_rho_sweep.svg" alt="调用次数—准确率平面上的四支箭头，各自从较小的 ρ 指向较大的 ρ。">
+        <figcaption><b>图 6.</b> 只改 ρ 的比较（论文表 9）：每支箭头都指向更少的调用，准确率有升有降。开发集诊断。</figcaption>
+      </figure>
     </div>
     <div class="table-wrap">
       <table>

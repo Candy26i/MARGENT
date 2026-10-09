@@ -8,6 +8,8 @@ Value of Delegation in Agentic Systems*.
 - `static/MARGENT.pdf` — the paper
 - `static/data/paper_tables.json` — every table of the paper, transcribed
 - `static/images/margent_overview.png` — the paper's Figure 1
+- `static/images/fig_*.svg|png` — five result charts drawn from the paper's tables;
+  regenerate with `python3 static/charts/make_paper_figures.py` (needs matplotlib)
 
 Preview locally:
 

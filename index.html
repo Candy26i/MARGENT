@@ -195,6 +195,12 @@
     <h2>Results</h2>
 
     <h3><span class="rq">5a</span>How much value is available after one delegation?</h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_oracle_depth.svg" alt="Grouped bars per task: commit accuracy, best one-call accuracy and best measured accuracy, with Gain@1 above each group.">
+        <figcaption><b>Figure 2.</b> Measured oracle accuracy by maximum delegation depth (Table 1): commit A<sub>0</sub>, best single call A<sub>1</sub>, best measured sequence A<sub>D</sub>, with Gain@1 above each group. One call recovers most of the measured gain on every task.</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 1. Measured oracle accuracy by maximum delegation depth. Each row comes from one shared collection, so depth comparisons do not mix runs. <span class="tag">interventional collection, not a held-out evaluation</span></caption>
@@ -213,6 +219,12 @@
     </div>
 
     <h3><span class="rq">5b</span>The value of a call depends on which sub-agent is called</h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_net_marginal_value.svg" alt="Net marginal value of one forced call for each task and sub-agent, in percentage points around a zero line.">
+        <figcaption><b>Figure 3.</b> Net marginal value of one forced call, 100·Δ̄<sub>a</sub> in points (Table 2). The Verifier dominates on every task; the Extractor is near zero or negative.</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 2. Net marginal value of one forced call, 100·Δ̄<sub>a</sub>, in percentage points. Positive cells have more rescue than corruption mass; negative cells have more corruption. <span class="tag">interventional collection, one-step branches</span></caption>
@@ -230,6 +242,12 @@
     </div>
 
     <h3><span class="rq">5c</span>Learned delegation on collection-disjoint evaluations</h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_disjoint_eval.svg" alt="Paired bars per task: candidate accuracy versus MARGENT accuracy on the collection-disjoint sets, and a second panel with calls per example.">
+        <figcaption><b>Figure 4.</b> Collection-disjoint evaluation (Table 3): the same manager's candidate versus MARGENT's final answer, and mean sub-agent calls per example.</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 3. Evaluation on sets disjoint from the interventional collection. MedQA, MMLU-Pro and AQuA-RAT use checkpoints fixed before this single run. GPQA-Diamond-100 is collection-disjoint but also served as GPQA's development pool, so its row is a collection-disjoint evaluation rather than a locked one. "Candidate" is the answer the same manager would submit before its first delegation. <span class="status ok">locked evaluation (GPQA: collection-disjoint only)</span></caption>
@@ -252,6 +270,12 @@
     </div>
 
     <h3><span class="rq">5d</span>Fewer calls at the same accuracy</h3>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_accuracy_vs_calls.svg" alt="Four panels, one per task, plotting accuracy against calls per example for the low-call and selected MARGENT points, one forced Verifier call and all three sub-agents forced.">
+        <figcaption><b>Figure 5.</b> Accuracy against mean sub-agent calls on the development pools (Tables 4 and 5). Blue: MARGENT from the low-call policy to the selected operating point; orange diamond: one forced Verifier call; violet square: all three sub-agents forced. About one selected call matches three forced calls. Development diagnostic.</figcaption>
+      </figure>
+    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 5. Development-set operating points with the same manager and sub-agent pool. Selected on the development pools, not additional held-out tests. Accuracies in percent. ΔAcc. is positive when MARGENT is more accurate than force-all. <span class="status weak">development diagnostic</span></caption>
@@ -272,6 +296,12 @@
     <h3><span class="rq">5e</span>Does the policy call on the right states? <span class="status weak">development diagnostic</span></h3>
     <div class="prose">
       <p>For analysis only, gold labels give the call gap (the probability of delegating when the candidate is wrong minus the probability when it is correct), which is positive on all four tasks at the selected development operating points: 0.381 on MedQA, 0.296 on MMLU-Pro, 0.067 on GPQA and 0.102 on AQuA-RAT. A matched-budget replay that fixes the role and call count and resamples examples 2,000 times puts MedQA's selected subset at 82.0%, above the random 95% interval [75.0, 81.0], with MMLU-Pro and GPQA inside their intervals, although this test does not isolate candidate use from query difficulty.</p>
+    </div>
+    <div class="box">
+      <figure>
+        <img src="static/images/fig_rho_sweep.svg" alt="Arrows in the calls-versus-accuracy plane, one per comparison in Table 9, each from the lower to the higher commit-to-rescue ratio.">
+        <figcaption><b>Figure 6.</b> Changing only ρ (Table 9). Every arrow points to fewer calls; accuracy moves both ways. Development diagnostic.</figcaption>
+      </figure>
     </div>
     <div class="table-wrap">
       <table>
