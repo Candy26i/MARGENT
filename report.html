@@ -107,7 +107,7 @@
         <li><b>一次调用的价值取决于调用谁。</b>净边际价值 = 救回比例减损坏比例。同一个 Reasoner 在 MedQA 是 +6.8 pp，在 AQuA-RAT 是 −4.3 pp。Extractor 在四个任务上都接近零或为负。Verifier 均值最大，但不能替代其他角色：12 道 MedQA 和 9 道 MMLU-Pro 题被 Reasoner 救回而 Verifier 救不回。<span class="tag coll">采集集</span></li>
         <li><b>学到的策略在四个与采集集不相交的评测上都高于自己的候选答案</b>：宏平均 +17.1 pp，0.526 次调用 / 题。其中 GPQA-Diamond 100 同时是它的开发池，不是独立的锁定集。论文自己的限定：这是同一 scaffold（带子智能体工具的推理框架）内的端到端差异，不是相对独立单模型基线的增益。<span class="tag lock">不相交评测</span></li>
         <li><b>约一次选择性调用 ≈ 三次强制调用。</b>操作点 = 一个训练好的 checkpoint 在开发池上得到的「调用次数、准确率」这一对数字。选出的操作点宏平均 73.2%@1.03 次，强制全部三个子智能体 73.6%@3.0 次。MMLU-Pro 持平（71.5%），AQuA-RAT 反超（81.1% vs 75.2%），GPQA 仍落后 6.0 pp。<span class="tag dev">开发集诊断</span></li>
-        <li><b>候选答案本身对委派有用；只看结果的 RL 会学成「全都调用」。</b>AQuA-RAT 上只把传给 Verifier 的候选答案置空，准确率 81.1% → 74.0%。<span class="tag dev">开发集诊断</span> 反过来，从 MARGENT 的 SFT checkpoint（论文称其为「选择性 SFT」checkpoint）的 results/README.md，8B 运行是从同状态采集蒸馏出的 SFT 继续训练）出发、只用终端正确性奖励的 GRPO 继续训练，8B 与 9B 分别走到 2.98 和 3.00 次调用 / 题。这两次运行没有准确率记录，所以只能说明调用行为，不能说明准确率损失。附录 D 诊断；论文只说明是 MedQA，没有给出评测切分和题数。</li>
+        <li><b>候选答案本身对委派有用；只看结果的 RL 会学成「全都调用」。</b>AQuA-RAT 上只把传给 Verifier 的候选答案置空，准确率 81.1% → 74.0%。<span class="tag dev">开发集诊断</span> 反过来，从 MARGENT 的 SFT checkpoint（论文称其为「选择性 SFT」checkpoint）出发、只用终端正确性奖励的 GRPO 继续训练，8B 与 9B 分别走到 2.98 和 3.00 次调用 / 题。这两次运行没有准确率记录，所以只能说明调用行为，不能说明准确率损失。附录 D 诊断；论文只说明是 MedQA，没有给出评测切分和题数。</li>
       </ol>
     </div>
   </div>
