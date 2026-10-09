@@ -1,15 +1,10 @@
 """Teacher client abstraction.
 
-A TeacherClient takes a list of OpenAI-style chat messages and returns
-a normalized TeacherResponse. Concrete implementations:
-
-  - AnthropicTeacherClient (Claude)
-  - OpenAITeacherClient    (GPT-4o, GPT-4-turbo, etc.)
-  - DeepSeekTeacherClient  (DeepSeek V4 / chat / reasoner)
-
-Switching is done via build_teacher_client(provider, model, ...).
-Each generated SFT sample carries provider + model in its metadata so
-downstream comparison studies can group by teacher identity.
+A TeacherClient takes a list of OpenAI-style chat messages and returns a
+normalized TeacherResponse. The paper's sub-agent data were synthesised with
+DeepSeek, so DeepSeekTeacherClient is the only implementation shipped;
+build_teacher_client is the single construction point. Each generated SFT
+sample carries provider + model in its metadata.
 """
 from __future__ import annotations
 
@@ -52,17 +47,6 @@ def build_teacher_client(
     base_url: Optional[str] = None,
 ) -> TeacherClient:
     p = provider.strip().lower()
-    if p == "anthropic" or p == "claude":
-        from .anthropic_client import AnthropicTeacherClient
-        return AnthropicTeacherClient(
-            model=model, timeout=timeout, max_retries=max_retries, api_key=api_key
-        )
-    if p == "openai" or p == "gpt":
-        from .openai_client import OpenAITeacherClient
-        return OpenAITeacherClient(
-            model=model, timeout=timeout, max_retries=max_retries,
-            api_key=api_key, base_url=base_url,
-        )
     if p == "deepseek":
         from .deepseek_client import DeepSeekTeacherClient
         return DeepSeekTeacherClient(

@@ -2,23 +2,22 @@
 
 Usage examples (see README for full walkthroughs):
 
-  # Synthesize 500 reasoner samples with Claude as teacher
+  # Synthesize 500 reasoner samples with DeepSeek as teacher (DEEPSEEK_API_KEY set)
   python -m src.pipeline.cli synth_subagent \\
-      --teacher_provider anthropic --teacher_model claude-sonnet-4-5 \\
-      --teacher_id claude_sonnet_4_5 \\
+      --teacher_model deepseek-chat --teacher_id medqa_mv \\
       --agent_kind reasoner --n_samples 500
 
   # Train the reasoner subagent
   python -m src.pipeline.cli train_subagent \\
-      --teacher_id claude_sonnet_4_5 --agent_kind reasoner
+      --teacher_id medqa_mv --agent_kind reasoner
 
   # Collect paired counterfactual branches and build the routing SFT data
   python -m src.pipeline.cli build_marginal_sft \\
-      --teacher_id claude_sonnet_4_5
+      --teacher_id medqa_mv
 
   # Distill the manager on manager_sft_marginal.jsonl
   python -m src.pipeline.cli train_manager_sft \\
-      --teacher_id claude_sonnet_4_5
+      --teacher_id medqa_mv
 """
 from __future__ import annotations
 
@@ -69,7 +68,7 @@ def _parse_args() -> argparse.Namespace:
     ctx_group.add_argument("--subagent_teacher_id", type=str, default="",
                            help="If set, load subagent adapters from this teacher_id's adapter dir instead of --teacher_id. "
                                 "Use when reusing subagents trained under a different run (e.g. --teacher_id mmlu_pro_gpt54 "
-                                "--subagent_teacher_id mmlu_pro_claude).")
+                                "--subagent_teacher_id mmlu_pro_mv).")
     ctx_group.add_argument("--output_root", type=str, default="outputs")
     ctx_group.add_argument("--seed", type=int, default=42)
     ctx_group.add_argument("--binding_mode", type=str, default="auto",
@@ -146,9 +145,8 @@ def _parse_args() -> argparse.Namespace:
         "subagent synthesis",
         "synth_subagent / export_deepseek_jsonl / import_deepseek_jsonl",
     )
-    synth_group.add_argument("--teacher_provider", type=str, default="",
-                             choices=["", "anthropic", "claude", "openai", "gpt", "deepseek"])
-    synth_group.add_argument("--teacher_model", type=str, default="")
+    synth_group.add_argument("--teacher_model", type=str, default="deepseek-chat",
+                             help="DeepSeek model id used to synthesise sub-agent SFT data")
     synth_group.add_argument("--agent_kind", type=str, default="",
                              choices=["", "extractor", "reasoner", "verifier"])
     synth_group.add_argument("--n_samples", type=int, default=500)
@@ -440,14 +438,14 @@ def main() -> None:
         return
 
     if args.stage == "synth_subagent":
-        if not (args.teacher_provider and args.teacher_model and args.agent_kind):
-            sys.exit("synth_subagent requires --teacher_provider, --teacher_model, --agent_kind")
+        if not (args.teacher_model and args.agent_kind):
+            sys.exit("synth_subagent requires --teacher_model and --agent_kind")
         data = _load_benchmark_splits(args)
         kind = args.agent_kind
         # Synthesize on the train pool
         result = run_synthesize_subagent(
             ctx=ctx, rows=data["train"], agent_kind=kind,
-            teacher_provider=args.teacher_provider, teacher_model=args.teacher_model,
+            teacher_provider="deepseek", teacher_model=args.teacher_model,
             n_samples=args.n_samples,
             base_temperature=args.synth_temperature,
             max_retries=args.synth_max_retries,

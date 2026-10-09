@@ -63,7 +63,7 @@ input, so the Verifier's cache key includes the candidate it audits.
 ```
 src/
   benchmarks/   MedQA, MMLU-Pro, GPQA and AQuA-RAT loaders -> StandardRow
-  teachers/     OpenAI / Anthropic / DeepSeek clients for sub-agent data synthesis
+  teachers/     DeepSeek teacher client for sub-agent data synthesis
   subagents/    sub-agent prompts, pydantic schemas, synthesis, LoRA SFT, runtime
   manager/      prompt protocol (prompt.py), interventional collection + distillation
                 data (marginal_value.py), manager SFT (sft.py), tool-call
@@ -93,7 +93,7 @@ pip install -r requirements.txt
 # separate environment for the vLLM sub-agent server
 conda create -n vllm_env python=3.11 -y && conda activate vllm_env && pip install vllm
 
-export OPENAI_API_KEY=...      # or ANTHROPIC_API_KEY / DEEPSEEK_API_KEY (synthesis only)
+export DEEPSEEK_API_KEY=...    # sub-agent data synthesis only (DeepSeek, OpenAI-compatible API)
 export PYTHONUTF8=1
 ```
 
@@ -123,7 +123,7 @@ complete protocol with go/no-go gates.
 ```bash
 export BASE_MODEL=Qwen/Qwen3.5-9B        # the paper's manager checkpoint; Qwen/Qwen3-8B also works
 export TEACHER_ID=medqa_mv
-export PROVIDER=openai MODEL=gpt-4o
+export TEACHER_MODEL=deepseek-chat        # teacher for sub-agent data synthesis
 export MEDQA_CACHE=outputs/data/medqa_us4_normalized.jsonl
 export TASK_DESC="You are a manager agent solving a medical multiple-choice question."
 export SPLIT="--train_size 1400 --dev_size 200 --test_size 500"
@@ -137,7 +137,7 @@ python -m src.pipeline.cli load_medqa --base_model "$BASE_MODEL" \
 for KIND in extractor reasoner verifier; do
   python -m src.pipeline.cli synth_subagent \
       --base_model "$BASE_MODEL" --teacher_id "$TEACHER_ID" \
-      --teacher_provider "$PROVIDER" --teacher_model "$MODEL" \
+      --teacher_model "$TEACHER_MODEL" \
       --agent_kind "$KIND" --n_samples 500 --synth_symmetric_leakage \
       --medqa_normalized_cache "$MEDQA_CACHE" $SPLIT --task_description "$TASK_DESC"
 done
