@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
-"""Paper figures for the MARGENT project page (Tables 1-5, 8-10 of the submission).
+"""Paper figures for the MARGENT project page (Tables 1-5 and 9 of the submission).
 
-Reads ``static/data/paper_tables.json`` (the paper's tables, transcribed) and,
-for the released 8B traces, ``static/data/medqa_marginal_v1/eval_dev200.jsonl``
-and ``eval_test200.jsonl`` (the records of the MARGENT ``legacy`` branch, tag
-``v0.1-full``).  Nothing is typed in by hand
-except the numbers the paper states in prose, which are used as checks: every
-derived quantity (Gain@1, macro means, gains, call reductions, the 20:1 ratio,
-the released call-count distribution) is recomputed here and asserted against
-the table / the paper text before anything is drawn.
+Reads ``static/data/paper_tables.json`` (the paper's tables, transcribed).
+Nothing is typed in by hand except the numbers the paper states in prose,
+which are used as checks: every derived quantity (Gain@1, macro means, gains,
+call reductions) is recomputed here and asserted against the table / the paper
+text before anything is drawn.
 
   fig_oracle_depth           Table 1   commit / best one call / best measured, Gain@1
   fig_net_marginal_value     Table 2   net marginal value of one forced call per sub-agent
   fig_disjoint_eval          Table 3   candidate vs MARGENT on collection-disjoint evaluations
   fig_accuracy_vs_calls      Tables 4+5  accuracy vs calls, four small multiples
-  fig_correction_corruption  Table 8   correction vs corruption fractions
   fig_rho_sweep              Table 9   commit-to-rescue ratio arrows in the (calls, accuracy) plane
-  fig_grpo_collapse          Table 10 + released 8B traces
 
 Run:  /opt/anaconda3/bin/python3 static/charts/make_paper_figures.py
 """
@@ -24,12 +19,10 @@ from __future__ import annotations
 
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.transforms import offset_copy
@@ -58,7 +51,6 @@ C_AGENT = {"Extractor": cs.YELLOW, "Reasoner": cs.VIOLET, "Verifier": cs.AQUA}
 C_CORRECTION = cs.BLUE
 C_CORRUPTION = cs.RED
 C_GRPO = cs.MUTED             # outcome-only GRPO continuations (panel a reference grey)
-C_SPLIT = {"dev": cs.INK2, "test": cs.NEUTRAL}   # released trace splits (panel b), distinct lightness
 IN_BAR_INK = {"dev": cs.SURFACE, "test": cs.INK}  # text inside a bar, by the fill's luminance
 
 ARROW = r"$\rightarrow$"
@@ -84,8 +76,6 @@ PAPER_TEXT = {
     "t9_aqua_points_lost": 12.6,      # Sec. 4.4
     "t10_calls": {"MedQA, 8B manager": 2.98, "MedQA, 9B manager": 3.00},  # Table 10, Sec. 4.5
     "seeds": (80.5, 1.0, 0.517, 0.043),  # Appendix D
-    "released_calls": {"dev": {3: 200}, "test": {1: 1, 2: 1, 3: 198}},  # content spec, released traces
-    "released_mean_calls": {"dev": 3.000, "test": 2.985},
 }
 
 MISMATCHES: list[str] = []
@@ -207,7 +197,7 @@ def verify(t: dict) -> None:
     assert any(b > a for a, b in accs) and any(b < a for a, b in accs), "accuracy change is monotone"
     print("  accuracy rises in some pairs and falls in others (not monotone)  ok")
 
-    print("Table 10 and released 8B traces")
+    print("Table 10")
     t10 = t["table10_grpo_continuations"]
     for run, calls in PAPER_TEXT["t10_calls"].items():
         check(f"{run} calls", t10[run]["calls"], calls, tol=1e-9)
@@ -573,7 +563,6 @@ def fig_rho_sweep(t: dict) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Figure: outcome-only GRPO collapses to three calls (Table 10 + released traces)
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
 def main() -> None:
