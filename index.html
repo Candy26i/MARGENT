@@ -219,12 +219,6 @@
       <h3><span class="rq">5a</span>How much value is available after one delegation?</h3>
       <p>Most of the recoverable value is concentrated in the first delegation, provided it is chosen well. A single call captures over 90% of the measured gain on three tasks and 91.7% in the macro mean. A second call adds between 0.5 and 4.5 points. The third call adds exactly zero on the two collections searched to depth three. So on three tasks the first call is effectively the whole budget. GPQA is the exception: its second call adds 4.5 points, and its commit accuracy is the closest to chance, so a second opinion still has more to add there. Choosing the first call well is therefore the dominant decision in this pool.</p>
     </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_oracle_depth.svg" alt="Grouped bar chart with four task groups (MedQA, AQuA-RAT, MMLU-Pro, GPQA) and three bars each: commit accuracy A0, best one-call accuracy A1, and best measured accuracy A_D. Bars are labelled with their values and each group shows its Gain@1 percentage; n is printed under each task name.">
-        <figcaption><b>Figure 2.</b> Measured oracle accuracy by maximum delegation depth (Table 1). Commit A<sub>0</sub>, best single call A<sub>1</sub>, best measured sequence A<sub>D</sub>. Gain@1 = (A<sub>1</sub> − A<sub>0</sub>)/(A<sub>D</sub> − A<sub>0</sub>). The A<sub>1</sub> bar is close to the A<sub>D</sub> bar on MedQA, AQuA-RAT and MMLU-Pro; on GPQA the second call still adds 4.5 points.</figcaption>
-      </figure>
-    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 1. Measured oracle accuracy by maximum delegation depth. Each row comes from one shared collection, so depth comparisons do not mix runs. <span class="tag">interventional collection, not a held-out evaluation</span></caption>
@@ -244,12 +238,6 @@
       <h3><span class="rq">5b</span>The value of a call depends on which sub-agent is called</h3>
       <p>The Verifier has the largest mean value on all four tasks, but the value of a call varies widely with role and task. The paper measures this with the mean one-step marginal value 100·Δ̄<sub>a</sub> from the forced one-step branches, which separates sub-agent choice from generic extra computation (the oracle picks a sub-agent after seeing branch outcomes). The same Reasoner is worth +6.8 points on MedQA and −4.3 on AQuA-RAT. The Extractor is near zero or negative everywhere. The Verifier is still not interchangeable with the other roles: 12 MedQA and 9 MMLU-Pro questions are rescued by the Reasoner and not by the Verifier, and forcing the strongest role on every question still spends calls on already-correct candidates.</p>
     </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_net_marginal_value.svg" alt="Matrix of four tasks by three sub-agents showing the net marginal value of one forced call in percentage points around a zero line. Verifier values are positive and largest on every task; Extractor values are near zero or negative; Reasoner is positive on MedQA, MMLU-Pro and GPQA and negative on AQuA-RAT.">
-        <figcaption><b>Figure 3.</b> Net marginal value of one forced call, 100·Δ̄<sub>a</sub> in percentage points (Table 2). Positive means more rescue than corruption mass. The Verifier column dominates; the Extractor is near zero or negative on all four tasks.</figcaption>
-      </figure>
-    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 2. Net marginal value of one forced call, 100·Δ̄<sub>a</sub>, in percentage points. Positive cells have more rescue than corruption mass; negative cells have more corruption. <span class="tag">interventional collection, one-step branches</span></caption>
@@ -267,12 +255,6 @@
 
       <h3><span class="rq">5c</span>Learned delegation on collection-disjoint evaluations</h3>
       <p>Table 3 compares two outputs of the same trained manager on each evaluation set: the candidate it would submit before any delegation, and MARGENT's final answer. The final answer is more accurate on all four tasks. The macro gain is 17.1 points at 0.53 calls per example. Checkpoints for MedQA, MMLU-Pro and AQuA-RAT were fixed before this single evaluation; GPQA-Diamond-100 is collection-disjoint but also served as its development (diagnostic) pool.</p>
-    </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_disjoint_eval.svg" alt="Paired bars per task comparing the candidate accuracy with the MARGENT final accuracy on the collection-disjoint evaluation sets, with the gain labelled, and a second panel showing mean sub-agent calls per example: 0.460, 0.780, 0.352 and 0.510.">
-        <figcaption><b>Figure 4.</b> Collection-disjoint evaluation (Table 3). Left: candidate vs MARGENT accuracy per task with the gain in points. Right: mean sub-agent calls per example. The blue bar is higher on every task. AQuA-RAT has the largest gain (+39.4 points) and the most calls (0.780); MMLU-Pro gains 10.6 points with the fewest calls (0.352). The gain is end-to-end inside the same scaffold, not a comparison with a separately prompted single model.</figcaption>
-      </figure>
     </div>
     <div class="table-wrap">
       <table>
@@ -296,12 +278,6 @@
       <p>The paper reports MARGENT at four named sets of development operating points: low-call (Table 4), selected (Table 5), high-call (Table 8) and representative (Table 7). They are not all the same checkpoints; for example the GPQA high-call point (1.110 calls, Table 8) differs from the GPQA selected point (1.040 calls, Table 5). The paper does not list which checkpoint each set uses.</p>
       <p>Against the strongest single role, MARGENT saves 43.5% of calls for about 1.6 accuracy points (Table 4). Because Table 2 names the Verifier the strongest average role, always calling it is a more informative baseline than no calls or all calls. On the four development pools, low-call MARGENT policies use 0.565 calls per example against the always-Verifier baseline's 1.00 and score 69.3% against its 70.8%. The paper gives the average accuracy cost as 1.6 points; the rounded macro row shows 69.3 vs 70.8.</p>
       <p>At about one selected call, MARGENT matches forcing all three sub-agents (Table 5). The selected operating points average 73.2% at 1.03 calls; force-all averages 73.6% at 3.0 calls. That is a threefold cut in calls for a 0.4-point difference. The difference is concentrated on GPQA, where force-all stays 6.0 points better; on MedQA the gap is 1.5 points. MMLU-Pro is the cleanest case: 1.07 selected calls match three forced calls at 71.5%. AQuA-RAT shows that more calls can hurt: 1.03 selected calls reach 81.1%, force-all 75.2%.</p>
-    </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_accuracy_vs_calls.svg" alt="Four small panels, one per task, plotting accuracy against mean calls per example from 0 to 3.2. Each panel shows the low-call MARGENT point, the always-Verifier point at one call, the selected MARGENT point near one call, and the force-all point at three calls. The selected MARGENT point is close to force-all on MedQA and MMLU-Pro, below it on GPQA, and above it on AQuA-RAT.">
-        <figcaption><b>Figure 5.</b> Accuracy against mean sub-agent calls on the development pools (Tables 4 and 5). Blue: MARGENT, the low-call policy (Table 4) joined to the selected operating point (Table 5). Orange diamond: one forced Verifier call. Violet square: all three sub-agents forced. Compare the right-hand blue point with the violet square: equal on MMLU-Pro (71.5 vs 71.5), 1.5 points lower on MedQA, 6.0 lower on GPQA, 5.9 higher on AQuA-RAT. Macro means 73.2% at 1.03 calls vs 73.6% at 3.0. Development diagnostic.</figcaption>
-      </figure>
     </div>
     <div class="table-wrap">
       <table>
@@ -336,12 +312,6 @@
     <div class="prose">
       <h4>Rescue and corruption under the learned policy</h4>
       <p>Accuracy hides two opposing effects of delegation. Table 8 splits each high-call operating point into two shares of all examples: candidates that were wrong and end correct (correction, the paper's word for a rescue produced by the learned policy), and candidates that were correct and end wrong (corruption). Net value is positive for every policy, but the two shares are balanced very differently across tasks. AQuA-RAT corrects 48.0% of all examples and corrupts 2.4%, a twenty-to-one ratio. GPQA corrects 19.0% and corrupts 4.0%. A high oracle therefore does not by itself justify calling every sub-agent: the oracle keeps only successful branches, while an executable policy pays for its own mistakes.</p>
-    </div>
-    <div class="box">
-      <figure class="narrow">
-        <img src="static/images/fig_correction_corruption.svg" alt="Paired horizontal bars per task showing the correction fraction and the corruption fraction of all examples at the high-call operating points. AQuA-RAT has the largest correction bar at 0.480 against a corruption bar of 0.024.">
-        <figcaption><b>Figure 6.</b> Correction and corruption as fractions of all examples at the recorded high-call operating points (Table 8). AQuA-RAT corrects twenty times as many examples as it corrupts. Development diagnostic.</figcaption>
-      </figure>
     </div>
     <div class="table-wrap">
       <table>
@@ -389,12 +359,6 @@
       <h3><span class="rq">5f</span>Commit examples control the call-stop trade-off</h3>
       <p>Within each pair of Table 9 the commit-to-rescue cap ρ is the only data-construction variable that changes. Keeping more commit examples lowers the call rate in every pair. The call gap generally rises at the same time, so the remaining calls concentrate on wrong candidates. Accuracy, however, is not monotone. The aggressive AQuA-RAT comparison removes 37.4% of calls and loses 12.6 points. ρ is a transparent control over policy behaviour, not a free efficiency gain.</p>
     </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_rho_sweep.svg" alt="Arrows in the plane of mean calls (x) against accuracy (y), one per comparison in Table 9, each from the lower rho value to the higher one and labelled with the rho values and the change in call gap. Every arrow points left, toward fewer calls; two point slightly up and two point down.">
-        <figcaption><b>Figure 7.</b> Controlled ρ comparisons (Table 9). Each arrow changes only ρ inside a fixed collection and training recipe, from the lower to the higher value. More commit examples always mean fewer calls; accuracy moves both ways. Development diagnostic.</figcaption>
-      </figure>
-    </div>
     <div class="table-wrap">
       <table>
         <caption>Table 9. Controlled commit-to-rescue comparisons on development data. "All" keeps every available commit example. Each arrow changes only ρ within a fixed collection and training recipe. <span class="status weak">development diagnostic</span></caption>
@@ -432,13 +396,7 @@
     <div class="prose">
       <p>Two sets of results in the paper's appendix explain design choices. Neither is a main comparison.</p>
       <h3>(a) Outcome-only GRPO collapses to three calls</h3>
-      <p>Appendix D records two GRPO continuations that start from selective SFT checkpoints and use a terminal binary correctness reward with no call penalty. Both converge to the three-call ceiling: 2.98 calls per example for the MedQA 8B manager and 3.00 for the 9B manager. Accuracy records for these two runs are missing from the exported record and are not imputed, so the appendix supports a claim about call behaviour, not about the accuracy cost of the collapse. For reference, Figure 8 draws the selective SFT MedQA three-seed mean of 0.517 calls (Table 4) and the Table 3 macro mean of 0.526.</p>
-    </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_grpo_collapse.svg" alt="Two panels. Left: bars for mean calls per example of the two GRPO continuations, 2.98 for the 8B manager and 3.00 for the 9B manager, against reference lines at 0.517 plus or minus 0.043 (selective SFT MedQA three-seed mean) and 0.526 (Table 3 macro mean). Right: call-count distribution of the released 8B traces, with all 200 dev questions at three calls and 198 of 200 test questions at three calls.">
-        <figcaption><b>Figure 8.</b> Outcome-only GRPO continuations (Table 10). Left: mean calls per example for the two continuations against the selective SFT reference (0.517 ± 0.043 on MedQA, three seeds) and the Table 3 macro mean (0.526). Right: number of sub-agent calls per question in the released 8B traces. All 200 dev questions and 198 of 200 test questions made three calls; the other two test questions made one and two calls. Appendix diagnostic.</figcaption>
-      </figure>
+      <p>Appendix D records two GRPO continuations that start from selective SFT checkpoints and use a terminal binary correctness reward with no call penalty. Both converge to the three-call ceiling: 2.98 calls per example for the MedQA 8B manager and 3.00 for the 9B manager. Accuracy records for these two runs are missing from the exported record and are not imputed, so the appendix supports a claim about call behaviour, not about the accuracy cost of the collapse.</p>
     </div>
     <div class="table-wrap">
       <table>
@@ -451,17 +409,6 @@
       </table>
     </div>
     <div class="prose">
-      <h4>The Appendix D 8B run in the released snapshot</h4>
-      <p>The <code>legacy</code> branch of the repository (tag <code>v0.1-full</code>) keeps a Qwen3-8B GRPO run (<code>results/medqa_marginal_v1/</code>, checkpoint <code>grpo_binary_mv2</code>) whose mean test calls, 2.985, match the 2.98 of the "MedQA, 8B manager" row. The paper does not name the run, and the accuracy records of the Table 10 runs are absent from its exported record, so the accuracies below come from those records only. On the 200 dev questions: candidate 55.5%, final 67.5%, 3.000 calls per question, 36 candidates corrected, 12 corrupted, exact McNemar p = 7.2e-4 against the candidate. On the 200 test questions: candidate 63.5%, final 76.5%, 2.985 calls, 38 corrected, 12 corrupted, p = 3.1e-4. Its call rate is 100% for both wrong and correct candidates, so the call gap is 0. The sub-agents help; the manager simply never learned to stop.</p>
-    </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_routing_behavior.svg" alt="Two panels for the released 8B GRPO traces. Left: for dev and test, 100 percent stacked horizontal bars of the four candidate-to-final transition classes (stayed correct, corrected, corrupted, stayed wrong) with counts. Right: call-count distribution for dev and test over 0, 1, 2 and 3 calls, with nearly every question at 3 calls.">
-        <figcaption><b>Figure 9.</b> The Appendix D 8B run on MedQA dev and test (200 questions each). Left: candidate to final transitions. Right: number of sub-agent calls per question. The manager calls all three sub-agents on almost every question whether or not its candidate was already correct. Appendix diagnostic.</figcaption>
-      </figure>
-    </div>
-    <div class="prose">
-      <p class="small">The same snapshot holds the one-step interventional collection of that run (400 MedQA training questions, depth 1): direct 55.0%, forced Extractor 58.5%, forced Reasoner 78.8%, forced Verifier 84.5%, hindsight best one-step branch 91.0%; rescued/corrupted counts 25/11, 100/5 and 127/9. Those 400 questions overlap the sub-agent SFT questions (400/400; the collection command lacked <code>--exclude_sft_example_ids</code>), so its rescue rates are likely inflated. The dev and test traces do not overlap the SFT questions. This run is not the selective SFT policy of the main text.</p>
       <h3>(b) Predecessor scaling diagnostic</h3>
       <p>Before the marginal-value experiments, the authors evaluated cold-start, generic and task-specific multi-agent training variants on three of the four final tasks. Backbones were Qwen3-4B, Qwen3-8B and Qwen3.5-9B; development sets held 100 to 200 examples per task. Table 6 lists, for each task and size, the best variant minus the base model of the same size. The macro gain drops from +20.0 at 4B to +4.8 at 9B, and on GPQA the 9B gain is exactly zero. Since each cell takes a maximum over several variants on a small sample, the table shows the tension that motivated the work. It is not a scaling law and not a main comparison. The lineage also explains the method: outcome-only GRPO and extra sub-agent SFT did not reliably improve the earlier pipeline, while manager-side cold-start SFT improved most cells. That motivated the controlled same-state collection.</p>
     </div>
@@ -476,15 +423,6 @@
           <tr class="hl"><td><b>Macro gain</b></td><td class="num pos">+20.0</td><td class="num pos">+16.2</td><td class="num pos">+4.8</td></tr>
         </tbody>
       </table>
-    </div>
-    <div class="box">
-      <figure>
-        <img src="static/images/fig_main_results.svg" alt="Four bar-chart panels, one per benchmark (MedQA, LegalBench, GPQA, MMLU-Pro). For each manager size (4B, 8B, 9B) three bars show base accuracy, cold-start SFT accuracy and the best GRPO cell, with one-standard-error bars and the best cell name labelled.">
-        <figcaption><b>Figure 10.</b> The predecessor pipeline (Appendix B data: <code>results/predecessor_scaling/main_results.json</code> on the <code>legacy</code> branch, tag <code>v0.1-full</code>): base, cold-start SFT and best GRPO cell per benchmark and manager size, with ±1 binomial SE. Table 6 is the GRPO bar minus the base bar for MedQA, GPQA and MMLU-Pro. LegalBench appears in the released record but was dropped from the paper. This diagnostic motivated same-state collection; it is not a main comparison.</figcaption>
-      </figure>
-    </div>
-    <div class="prose">
-      <p class="small">Across the 28 released GRPO cells, the mean change is +13.9 pp over base and +4.8 pp over cold start; 26 cells are above base, 1 equal, 1 below. GRPO sits below its own cold start in 5 of 28 cells. Binomial SE at p = 0.5 is 5.0 pp at n = 100 and 3.5 pp at n = 200.</p>
     </div>
   </div>
 </section>
